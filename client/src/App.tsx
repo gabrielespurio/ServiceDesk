@@ -22,43 +22,53 @@ function Router() {
       
       {/* Customer Portal */}
       <Route path="/portal">
-        <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
-          <Layout>
-            <PortalHome />
-          </Layout>
-        </ProtectedRoute>
+        {() => (
+          <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
+            <Layout>
+              <PortalHome />
+            </Layout>
+          </ProtectedRoute>
+        )}
       </Route>
       <Route path="/portal/new">
-        <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
-          <Layout>
-            <NewTicket />
-          </Layout>
-        </ProtectedRoute>
+        {() => (
+          <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
+            <Layout>
+              <NewTicket />
+            </Layout>
+          </ProtectedRoute>
+        )}
       </Route>
       <Route path="/portal/ticket/:id">
-        <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
-          <Layout>
-            <TicketDetail />
-          </Layout>
-        </ProtectedRoute>
+        {(params) => (
+          <ProtectedRoute allowedRoles={['user', 'resolver', 'admin']}>
+            <Layout>
+              <TicketDetail />
+            </Layout>
+          </ProtectedRoute>
+        )}
       </Route>
 
       {/* Agent Dashboard */}
       <Route path="/dashboard">
-        <ProtectedRoute allowedRoles={['resolver', 'admin']}>
-          <Layout>
-            <ResolverDashboard />
-          </Layout>
-        </ProtectedRoute>
+        {() => (
+          <ProtectedRoute allowedRoles={['resolver', 'admin']}>
+            <Layout>
+              <ResolverDashboard />
+            </Layout>
+          </ProtectedRoute>
+        )}
       </Route>
 
       {/* Admin Dashboard */}
       <Route path="/admin">
-        <ProtectedRoute allowedRoles={['admin']}>
-          <Layout>
-            <AdminDashboard />
-          </Layout>
-        </ProtectedRoute>
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AdminDashboard />
+            </Layout>
+          </ProtectedRoute>
+        )}
       </Route>
 
       {/* Default Route */}

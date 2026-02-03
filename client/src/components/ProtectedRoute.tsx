@@ -21,16 +21,15 @@ export function ProtectedRoute({
   }
 
   if (!user) {
-    setLocation("/auth");
-    return null;
+    return <Redirect to="/auth" />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     // Redirect based on role if unauthorized
-    if (user.role === 'user') setLocation("/portal");
-    else if (user.role === 'resolver') setLocation("/dashboard");
-    else if (user.role === 'admin') setLocation("/admin");
-    return null;
+    if (user.role === 'user') return <Redirect to="/portal" />;
+    if (user.role === 'resolver') return <Redirect to="/dashboard" />;
+    if (user.role === 'admin') return <Redirect to="/admin" />;
+    return <Redirect to="/auth" />;
   }
 
   return <>{children}</>;
