@@ -18,7 +18,7 @@ const FIELD_TYPES = [
 ];
 
 function DraggableSidebarItem({ type, label, icon: Icon }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `sidebar-${type}`,
     data: { type, label, isSidebarItem: true },
   });
@@ -33,7 +33,9 @@ function DraggableSidebarItem({ type, label, icon: Icon }) {
       style={style}
       {...listeners}
       {...attributes}
-      className="flex items-center gap-3 p-3 bg-card border rounded-md cursor-grab hover:bg-accent transition-colors"
+      className={`flex items-center gap-3 p-3 bg-card border rounded-md cursor-grab hover:bg-accent transition-colors ${
+        isDragging ? "opacity-50" : ""
+      }`}
     >
       <Icon className="h-4 w-4" />
       <span className="text-sm font-medium">{label}</span>
