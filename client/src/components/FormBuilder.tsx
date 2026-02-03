@@ -144,7 +144,10 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
     if (!over) return;
 
     // Adding from sidebar
-    if (active.data.current?.isSidebarItem) {
+    const isSidebarItem = active.data.current?.isSidebarItem;
+    const isOverCanvas = over.id === "droppable-canvas" || fields.some(f => f.id === over.id);
+
+    if (isSidebarItem) {
       const newField: FormField = {
         id: Math.random().toString(36).substr(2, 9),
         type: active.data.current.type,
@@ -263,11 +266,11 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
           <aside className="space-y-4">
             <div className="p-4 bg-muted/30 rounded-lg border">
               <h3 className="font-semibold mb-4">Campos Disponíveis</h3>
-              <div className="flex flex-col gap-2">
-                {FIELD_TYPES.map((type) => (
-                  <DraggableSidebarItem key={type.id} {...type} />
-                ))}
-              </div>
+                  <div className="flex flex-col gap-2">
+                    {FIELD_TYPES.map((type) => (
+                      <DraggableSidebarItem key={type.id} type={type.id} label={type.label} icon={type.icon} />
+                    ))}
+                  </div>
             </div>
           </aside>
         </div>
