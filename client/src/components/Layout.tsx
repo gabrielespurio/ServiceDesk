@@ -14,13 +14,21 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
-  const [location] = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+interface SidebarProps {
+  isMobile?: boolean;
+  user: any; // Using any for brevity in fast mode, ideally use a proper type
+  logout: () => void;
+  location: string;
+  setMobileMenuOpen: (open: boolean) => void;
+}
 
-  if (!user) return <div className="min-h-screen flex items-center justify-center">{children}</div>;
-
+const SidebarContent = ({ 
+  isMobile = false, 
+  user, 
+  logout, 
+  location, 
+  setMobileMenuOpen 
+}: SidebarProps) => {
   const isResolver = user.role === "resolver" || user.role === "admin";
   const isAdmin = user.role === "admin";
 
@@ -36,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     ] : [])
   ];
 
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  return (
     <div className={`flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 ${isMobile ? "w-64" : "w-20"}`}>
       <div className={`p-4 border-b border-sidebar-border flex items-center ${isMobile ? "gap-3" : "justify-center"}`}>
         <div className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
@@ -53,7 +61,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/50">
           <Avatar className="h-8 w-8 border border-border shrink-0">
             <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-              {user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              {user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col overflow-hidden">
@@ -130,12 +138,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+};
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuth();
+  const [location] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (!user) return <div className="min-h-screen flex items-center justify-center">{children}</div>;
 
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:block fixed inset-y-0 left-0 z-20">
-        <SidebarContent />
+        <SidebarContent 
+          user={user} 
+          logout={logout} 
+          location={location} 
+          setMobileMenuOpen={setMobileMenuOpen} 
+        />
       </aside>
 
       {/* Mobile Header */}
@@ -153,7 +174,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
              </Button>
            </SheetTrigger>
            <SheetContent side="left" className="p-0 w-64">
-             <SidebarContent isMobile />
+             <SidebarContent 
+               isMobile 
+               user={user} 
+               logout={logout} 
+               location={location} 
+               setMobileMenuOpen={setMobileMenuOpen} 
+             />
            </SheetContent>
          </Sheet>
       </div>
