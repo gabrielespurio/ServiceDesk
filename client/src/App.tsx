@@ -13,7 +13,7 @@ import PortalHome from "@/pages/portal/PortalHome";
 import NewTicket from "@/pages/portal/NewTicket";
 import TicketDetail from "@/pages/portal/TicketDetail";
 import ResolverDashboard from "@/pages/dashboard/ResolverDashboard";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
+import SettingsPage from "@/pages/admin/SettingsPage";
 
 function Router() {
   return (
@@ -60,15 +60,19 @@ function Router() {
         )}
       </Route>
 
-      {/* Admin Dashboard */}
-      <Route path="/admin">
+      {/* Admin/Settings */}
+      <Route path="/settings">
         {() => (
           <ProtectedRoute allowedRoles={['admin']}>
             <Layout>
-              <AdminDashboard />
+              <SettingsPage />
             </Layout>
           </ProtectedRoute>
         )}
+      </Route>
+
+      <Route path="/admin">
+        <Redirect to="/settings" />
       </Route>
 
       {/* Default Route */}

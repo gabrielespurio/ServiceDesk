@@ -32,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       { href: "/portal/new", label: "New Ticket", icon: PlusCircle },
     ]),
     ...(isAdmin ? [
-      { href: "/admin", label: "Admin Stats", icon: Settings },
+      { href: "/settings", label: "Configurações", icon: Settings },
     ] : [])
   ];
 
