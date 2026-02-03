@@ -24,7 +24,8 @@ function DraggableSidebarItem({ type, label, icon: Icon }) {
   });
 
   const style = transform ? {
-    transform: CSS.Translate.toString(transform),
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 9999,
   } : undefined;
 
   return (
@@ -34,7 +35,7 @@ function DraggableSidebarItem({ type, label, icon: Icon }) {
       {...listeners}
       {...attributes}
       className={`flex items-center gap-3 p-3 bg-card border rounded-md cursor-grab hover:bg-accent transition-colors ${
-        isDragging ? "opacity-50" : ""
+        isDragging ? "opacity-0" : ""
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -227,9 +228,9 @@ export default function FormBuilder({ initialData, onSave, onCancel }) {
         </div>
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeId && activeId.toString().startsWith("sidebar-") ? (
-          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg opacity-90 cursor-grabbing">
+          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg cursor-grabbing w-[200px]">
             {(() => {
               const type = activeId.toString().replace("sidebar-", "");
               const Icon = FIELD_TYPES.find(t => t.id === type)?.icon || Type;
