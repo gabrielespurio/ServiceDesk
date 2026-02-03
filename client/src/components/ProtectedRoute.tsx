@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { Loader2 } from "lucide-react";
 
 export function ProtectedRoute({ 
@@ -10,7 +10,6 @@ export function ProtectedRoute({
   allowedRoles?: string[] 
 }) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
   if (isLoading) {
     return (
