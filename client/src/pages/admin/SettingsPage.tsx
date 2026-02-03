@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   FileText, 
   Zap, 
@@ -10,8 +10,20 @@ import {
   GitBranch, 
   UserCog, 
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  Trash2,
+  Settings
 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api, buildUrl } from "@shared/routes";
+import { type Form } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 
 const SETTINGS_SECTIONS = [
   { id: "forms", label: "Formulários", icon: FileText },
@@ -24,6 +36,133 @@ const SETTINGS_SECTIONS = [
   { id: "users", label: "Gerenciamento de usuários", icon: UserCog },
   { id: "templates", label: "Templates de respostas", icon: MessageSquare },
 ];
+
+function FormsSettings() {
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newForm, setNewForm] = useState({ name: "", description: "" });
+
+  const { data: forms, isLoading } = useQuery<Form[]>({
+    queryKey: [api.forms.list.path],
+  });
+
+  const createFormMutation = useMutation({
+    mutationFn: async (form: { name: string; description: string }) => {
+      const res = await apiRequest("POST", api.forms.create.path, {
+        ...form,
+        fields: JSON.stringify([
+          { label: "Assunto", type: "text", required: true },
+          { label: "Descrição", type: "textarea", required: true }
+        ]),
+        active: true,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.forms.list.path] });
+      setIsDialogOpen(false);
+      setNewForm({ name: "", description: "" });
+      toast({ title: "Sucesso", description: "Formulário criado com sucesso" });
+    },
+  });
+
+  const deleteFormMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", buildUrl(api.forms.delete.path, { id }));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.forms.list.path] });
+      toast({ title: "Sucesso", description: "Formulário excluído com sucesso" });
+    },
+  });
+
+  if (isLoading) return <div>Carregando...</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium">Lista de Formulários</h3>
+          <p className="text-sm text-muted-foreground">Gerencie os formulários disponíveis para seus clientes.</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Novo Formulário
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Novo Formulário</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome do Formulário</Label>
+                <Input 
+                  id="name" 
+                  placeholder="Ex: Suporte Técnico" 
+                  value={newForm.name}
+                  onChange={(e) => setNewForm({ ...newForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Input 
+                  id="description" 
+                  placeholder="Ex: Formulário para solicitações de reparo" 
+                  value={newForm.description}
+                  onChange={(e) => setNewForm({ ...newForm, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button 
+                onClick={() => createFormMutation.mutate(newForm)}
+                disabled={!newForm.name || createFormMutation.isPending}
+              >
+                {createFormMutation.isPending ? "Criando..." : "Criar Formulário"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid gap-4">
+        {forms?.map((form) => (
+          <Card key={form.id}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
+              <div className="space-y-1">
+                <CardTitle className="text-base">{form.name}</CardTitle>
+                <CardDescription>{form.description}</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="icon">
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-destructive"
+                  onClick={() => deleteFormMutation.mutate(form.id)}
+                  disabled={deleteFormMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+        {forms?.length === 0 && (
+          <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+            Nenhum formulário cadastrado.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("forms");
@@ -61,7 +200,7 @@ export default function SettingsPage() {
         <main className="flex-1">
           <Card className="border-none shadow-none bg-muted/30 min-h-[500px]">
             <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-6">
                 {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.icon && (
                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
                     {(() => {
@@ -75,12 +214,16 @@ export default function SettingsPage() {
                 </h2>
               </div>
               
-              <div className="p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
-                <p className="text-lg font-medium">Módulo em desenvolvimento</p>
-                <p className="text-sm text-muted-foreground">
-                  A configuração de {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.label.toLowerCase()} estará disponível em breve.
-                </p>
-              </div>
+              {activeSection === "forms" ? (
+                <FormsSettings />
+              ) : (
+                <div className="p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
+                  <p className="text-lg font-medium">Módulo em desenvolvimento</p>
+                  <p className="text-sm text-muted-foreground">
+                    A configuração de {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.label.toLowerCase()} estará disponível em breve.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </main>

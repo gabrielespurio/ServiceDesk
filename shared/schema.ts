@@ -21,8 +21,8 @@ export const tickets = pgTable("tickets", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  status: ticketStatusEnum("status").default("open").notNull(),
-  priority: ticketPriorityEnum("priority").default("medium").notNull(),
+  status: ticketStatusEnum("status").default("aberto").notNull(),
+  priority: ticketPriorityEnum("priority").default("media").notNull(),
   category: text("category").notNull(), // e.g., Hardware, Software, Access
   creatorId: integer("creator_id").notNull(),
   assignedToId: integer("assigned_to_id"),
@@ -38,6 +38,25 @@ export const messages = pgTable("messages", {
   isInternal: boolean("is_internal").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const forms = pgTable("forms", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  fields: text("fields").notNull(), // JSON string representing the form structure
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const formsRelations = relations(forms, ({ many }) => ({
+  submissions: many(tickets), // Let's assume forms relate to tickets for now
+}));
+
+// Schemas
+export const insertFormSchema = createInsertSchema(forms).omit({ id: true, createdAt: true, updatedAt: true });
+export type Form = typeof forms.$inferSelect;
+export type InsertForm = z.infer<typeof insertFormSchema>;
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

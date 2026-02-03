@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages } from './schema';
+import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -120,7 +120,33 @@ export const api = {
         }),
       }
     }
-  }
+  },
+  forms: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/forms',
+      responses: {
+        200: z.array(z.custom<typeof forms.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/forms',
+      input: insertFormSchema,
+      responses: {
+        201: z.custom<typeof forms.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/forms/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

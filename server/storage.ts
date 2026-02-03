@@ -1,4 +1,4 @@
-import { users, tickets, messages, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage } from "@shared/schema";
+import { users, tickets, messages, forms, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -18,6 +18,11 @@ export interface IStorage {
   // Messages
   getMessages(ticketId: number): Promise<(Message & { user: User })[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+
+  // Forms
+  getForms(): Promise<Form[]>;
+  createForm(form: InsertForm): Promise<Form>;
+  deleteForm(id: number): Promise<boolean>;
 
   // Stats
   getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }>;
@@ -112,6 +117,20 @@ export class DatabaseStorage implements IStorage {
   async createMessage(message: InsertMessage): Promise<Message> {
     const [newMessage] = await db.insert(messages).values(message).returning();
     return newMessage;
+  }
+
+  async getForms(): Promise<Form[]> {
+    return db.select().from(forms).orderBy(desc(forms.createdAt));
+  }
+
+  async createForm(form: InsertForm): Promise<Form> {
+    const [newForm] = await db.insert(forms).values(form).returning();
+    return newForm;
+  }
+
+  async deleteForm(id: number): Promise<boolean> {
+    const result = await db.delete(forms).where(eq(forms.id, id)).returning();
+    return result.length > 0;
   }
 
   async getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }> {

@@ -166,6 +166,40 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // === FORM ROUTES ===
+  app.get(api.forms.list.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const forms = await storage.getForms();
+    res.json(forms);
+  });
+
+  app.post(api.forms.create.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const input = api.forms.create.input.parse(req.body);
+      const form = await storage.createForm(input);
+      res.status(201).json(form);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete(api.forms.delete.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const success = await storage.deleteForm(Number(req.params.id));
+    if (!success) return res.status(404).json({ message: "Form not found" });
+    res.json({ message: "Form deleted successfully" });
+  });
+
   // Seed Data if empty
   const users = await storage.getResolvers(); // Just a quick check
   if (users.length === 0) {
