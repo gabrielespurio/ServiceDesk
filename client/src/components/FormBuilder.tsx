@@ -1,6 +1,22 @@
 import React, { useState } from "react";
-import { useDraggable, useDroppable, DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
-import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { 
+  useDraggable, 
+  useDroppable, 
+  DndContext, 
+  DragOverlay, 
+  closestCorners,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors 
+} from "@dnd-kit/core";
+import { 
+  arrayMove, 
+  SortableContext, 
+  verticalListSortingStrategy, 
+  useSortable,
+  sortableKeyboardCoordinates 
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,6 +144,17 @@ interface FormBuilderProps {
 }
 
 export default function FormBuilder({ initialData, onSave, onCancel }: FormBuilderProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const { setNodeRef: setCanvasRef, isOver } = useDroppable({
     id: "droppable-canvas",
   });
@@ -157,23 +184,27 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
     if (isSidebarItem) {
       const newField: FormField = {
-        id: `field-${Math.random().toString(36).substring(2, 11)}`,
+        id: `field-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         type: active.data.current.type,
         label: active.data.current.label,
         required: false,
       };
 
       setFields((items) => {
-        if (over.id === "droppable-canvas") {
+        const overId = over.id;
+        
+        if (overId === "droppable-canvas") {
           return [...items, newField];
         }
 
-        const overIndex = items.findIndex((i) => i.id === over.id);
-        if (overIndex === -1) return [...items, newField];
+        const overIndex = items.findIndex((i) => i.id === overId);
+        if (overIndex !== -1) {
+          const newItems = [...items];
+          newItems.splice(overIndex, 0, newField);
+          return newItems;
+        }
 
-        const newItems = [...items];
-        newItems.splice(overIndex, 0, newField);
-        return newItems;
+        return [...items, newField];
       });
       return;
     }
@@ -200,7 +231,12 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   };
 
   return (
-    <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={closestCorners} 
+      onDragStart={handleDragStart} 
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-col h-full gap-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
