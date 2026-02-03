@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useDraggable, useDroppable, DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
+import { useDraggable, useDroppable, DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
@@ -195,7 +195,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   });
 
   return (
-    <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext collisionDetection={rectIntersection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full gap-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
