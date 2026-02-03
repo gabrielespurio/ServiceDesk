@@ -143,28 +143,29 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
     if (!over) return;
 
+    // Adding from sidebar
     const isSidebarItem = active.data.current?.isSidebarItem;
 
     if (isSidebarItem) {
       const newField: FormField = {
-        id: `field-${Math.random().toString(36).substr(2, 9)}`,
+        id: `field-${Math.random().toString(36).substring(2, 11)}`,
         type: active.data.current.type,
         label: active.data.current.label,
         required: false,
       };
 
-      if (over.id === "droppable-canvas") {
-        setFields((prev) => [...prev, newField]);
-      } else {
-        // Dropped over an existing field, insert it there
-        setFields((items) => {
-          const overIndex = items.findIndex((i) => i.id === over.id);
-          if (overIndex === -1) return [...items, newField];
-          const newItems = [...items];
-          newItems.splice(overIndex, 0, newField);
-          return newItems;
-        });
-      }
+      setFields((items) => {
+        if (over.id === "droppable-canvas") {
+          return [...items, newField];
+        }
+
+        const overIndex = items.findIndex((i) => i.id === over.id);
+        if (overIndex === -1) return [...items, newField];
+
+        const newItems = [...items];
+        newItems.splice(overIndex, 0, newField);
+        return newItems;
+      });
       return;
     }
 
