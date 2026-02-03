@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useDraggable, useDroppable, DndContext, DragOverlay, rectIntersection } from "@dnd-kit/core";
+import { useDraggable, useDroppable, DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
@@ -128,18 +128,27 @@ interface FormBuilderProps {
 }
 
 export default function FormBuilder({ initialData, onSave, onCancel }: FormBuilderProps) {
+  const { setNodeRef: setCanvasRef, isOver } = useDroppable({
+    id: "droppable-canvas",
+  });
+
   const [formName, setFormName] = useState(initialData?.name || "");
   const [formDescription, setFormDescription] = useState(initialData?.description || "");
   const [fields, setFields] = useState<FormField[]>(initialData?.fields ? JSON.parse(initialData.fields) : []);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<string | null>(null);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
+    if (event.active.data.current?.isSidebarItem) {
+      setActiveType(event.active.data.current.type);
+    }
   };
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     setActiveId(null);
+    setActiveType(null);
 
     if (!over) return;
 
@@ -190,12 +199,8 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
     setFields(fields.map(f => f.id === id ? { ...f, ...updates } : f));
   };
 
-  const { setNodeRef: setCanvasRef, isOver } = useDroppable({
-    id: "droppable-canvas",
-  });
-
   return (
-    <DndContext collisionDetection={rectIntersection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full gap-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
@@ -276,11 +281,10 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {activeId && activeId.toString().startsWith("sidebar-") ? (
-          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg cursor-grabbing w-[200px] opacity-90">
+        {activeId && activeType ? (
+          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg cursor-grabbing w-[240px] opacity-90">
             {(() => {
-              const type = activeId.toString().replace("sidebar-", "");
-              const fieldType = FIELD_TYPES.find(t => t.id === type);
+              const fieldType = FIELD_TYPES.find(t => t.id === activeType);
               if (!fieldType) return null;
               const Icon = fieldType.icon;
               return (
