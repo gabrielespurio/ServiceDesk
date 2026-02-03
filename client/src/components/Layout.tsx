@@ -37,17 +37,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className={`flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 ${isMobile ? "w-64" : "w-20 group-hover:w-64"}`}>
-      <div className={`p-4 border-b border-sidebar-border flex items-center ${isMobile ? "gap-3" : "justify-center group-hover:justify-start group-hover:gap-3"}`}>
+    <div className={`flex flex-col h-full bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 ${isMobile ? "w-64" : "w-20"}`}>
+      <div className={`p-4 border-b border-sidebar-border flex items-center ${isMobile ? "gap-3" : "justify-center"}`}>
         <div className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
           <Ticket className="w-6 h-6" />
         </div>
-        <h1 className={`text-xl font-bold tracking-tight text-primary transition-opacity duration-300 ${isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100 hidden group-hover:block"}`}>
-          HelpDesk
-        </h1>
+        {isMobile && (
+          <h1 className="text-xl font-bold tracking-tight text-primary">
+            HelpDesk
+          </h1>
+        )}
       </div>
 
-      <div className={`p-4 border-b border-sidebar-border transition-all duration-300 ${isMobile ? "block" : "hidden group-hover:block"}`}>
+      <div className={`p-4 border-b border-sidebar-border ${isMobile ? "block" : "hidden"}`}>
         <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/50">
           <Avatar className="h-8 w-8 border border-border shrink-0">
             <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
@@ -71,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link href={item.href}>
                     <div
                       className={`flex items-center transition-all duration-200 cursor-pointer rounded-lg ${
-                        isMobile ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center group-hover:justify-start group-hover:px-3 group-hover:gap-3"
+                        isMobile ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center"
                       } ${
                         isActive 
                           ? "bg-primary text-white shadow-md shadow-primary/20" 
@@ -80,14 +82,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium transition-opacity duration-300 ${isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100 hidden group-hover:block"}`}>
-                        {item.label}
-                      </span>
+                      {isMobile && (
+                        <span className="text-sm font-medium">
+                          {item.label}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 </TooltipTrigger>
                 {!isMobile && (
-                  <TooltipContent side="right" className="group-hover:hidden">
+                  <TooltipContent side="right">
                     {item.label}
                   </TooltipContent>
                 )}
@@ -104,18 +108,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Button 
                 variant="outline" 
                 className={`w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all ${
-                  isMobile ? "justify-start gap-2" : "justify-center p-0 h-10 group-hover:justify-start group-hover:px-3 group-hover:gap-2"
+                  isMobile ? "justify-start gap-2" : "justify-center p-0 h-10"
                 }`}
                 onClick={() => logout()}
               >
                 <LogOut className="w-5 h-5 shrink-0" />
-                <span className={`transition-opacity duration-300 ${isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100 hidden group-hover:block"}`}>
-                  Sign Out
-                </span>
+                {isMobile && (
+                  <span>
+                    Sign Out
+                  </span>
+                )}
               </Button>
             </TooltipTrigger>
             {!isMobile && (
-              <TooltipContent side="right" className="group-hover:hidden">
+              <TooltipContent side="right">
                 Sign Out
               </TooltipContent>
             )}
@@ -128,7 +134,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block fixed inset-y-0 left-0 z-20 group">
+      <aside className="hidden md:block fixed inset-y-0 left-0 z-20">
         <SidebarContent />
       </aside>
 
