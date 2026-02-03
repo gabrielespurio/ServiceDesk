@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { api, errorSchemas } from "@shared/routes";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import passport from "passport";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -41,7 +42,7 @@ export async function registerRoutes(
   app.post(api.auth.login.path, (req, res, next) => {
     // Passport handles the login logic configured in auth.ts
     // We just need to call authenticate
-    const authMiddleware = require("passport").authenticate("local", (err: any, user: any, info: any) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
       
@@ -49,8 +50,7 @@ export async function registerRoutes(
         if (err) return next(err);
         return res.status(200).json(user);
       });
-    });
-    authMiddleware(req, res, next);
+    })(req, res, next);
   });
 
   app.post(api.auth.logout.path, (req, res) => {
