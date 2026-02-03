@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import FormBuilder from "@/components/FormBuilder";
 
 const SETTINGS_SECTIONS = [
   { id: "forms", label: "Formulários", icon: FileText },
@@ -39,29 +40,25 @@ const SETTINGS_SECTIONS = [
 
 function FormsSettings() {
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ name: "", description: "" });
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [editingForm, setEditingForm] = useState<Form | null>(null);
 
   const { data: forms, isLoading } = useQuery<Form[]>({
     queryKey: [api.forms.list.path],
   });
 
   const createFormMutation = useMutation({
-    mutationFn: async (form: { name: string; description: string }) => {
+    mutationFn: async (form: any) => {
       const res = await apiRequest("POST", api.forms.create.path, {
         ...form,
-        fields: JSON.stringify([
-          { label: "Assunto", type: "text", required: true },
-          { label: "Descrição", type: "textarea", required: true }
-        ]),
         active: true,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.forms.list.path] });
-      setIsDialogOpen(false);
-      setNewForm({ name: "", description: "" });
+      setIsBuilderOpen(false);
+      setEditingForm(null);
       toast({ title: "Sucesso", description: "Formulário criado com sucesso" });
     },
   });
@@ -78,6 +75,19 @@ function FormsSettings() {
 
   if (isLoading) return <div>Carregando...</div>;
 
+  if (isBuilderOpen) {
+    return (
+      <FormBuilder
+        initialData={editingForm}
+        onSave={(data) => createFormMutation.mutate(data)}
+        onCancel={() => {
+          setIsBuilderOpen(false);
+          setEditingForm(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -85,48 +95,10 @@ function FormsSettings() {
           <h3 className="text-lg font-medium">Lista de Formulários</h3>
           <p className="text-sm text-muted-foreground">Gerencie os formulários disponíveis para seus clientes.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Novo Formulário
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Novo Formulário</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome do Formulário</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Ex: Suporte Técnico" 
-                  value={newForm.name}
-                  onChange={(e) => setNewForm({ ...newForm, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Input 
-                  id="description" 
-                  placeholder="Ex: Formulário para solicitações de reparo" 
-                  value={newForm.description}
-                  onChange={(e) => setNewForm({ ...newForm, description: e.target.value })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-              <Button 
-                onClick={() => createFormMutation.mutate(newForm)}
-                disabled={!newForm.name || createFormMutation.isPending}
-              >
-                {createFormMutation.isPending ? "Criando..." : "Criar Formulário"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" className="gap-2" onClick={() => setIsBuilderOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Novo Formulário
+        </Button>
       </div>
 
       <div className="grid gap-4">
@@ -138,7 +110,14 @@ function FormsSettings() {
                 <CardDescription>{form.description}</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => {
+                    setEditingForm(form);
+                    setIsBuilderOpen(true);
+                  }}
+                >
                   <Settings className="h-4 w-4" />
                 </Button>
                 <Button 
