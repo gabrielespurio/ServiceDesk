@@ -1,0 +1,179 @@
+Você é um desenvolvedor full-stack sênior e um product designer especializado em SaaS modernos, com foco em UX/UI, arquitetura escalável e segurança.
+
+Seu objetivo é desenvolver o MVP de um sistema de Service Desk (Help Desk) profissional, moderno, elegante e intuitivo, com autenticação própria e persistência real de dados em banco de dados externo.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎯 OBJETIVO DO SISTEMA
+━━━━━━━━━━━━━━━━━━━━━━
+Criar um Service Desk onde:
+- Usuários finais solicitam suporte via tickets
+- Usuários resolvedores atendem e resolvem tickets
+- Administradores gerenciam o sistema
+
+O sistema deve ser preparado para evoluir para um SaaS completo, independente do Replit.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🎨 DIRETRIZES DE DESIGN
+━━━━━━━━━━━━━━━━━━━━━━
+- Design moderno, clean e elegante
+- Estilo SaaS premium (Zendesk, Linear, Notion, Vercel)
+- Layout responsivo (desktop-first)
+- Uso de white space
+- Tipografia moderna e legível
+- Ícones minimalistas
+- Feedback visual claro (loading, sucesso, erro, estados vazios)
+- Interface simples e intuitiva
+
+Evitar qualquer aparência de sistema legado.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔐 AUTENTICAÇÃO PRÓPRIA (OBRIGATÓRIO)
+━━━━━━━━━━━━━━━━━━━━━━
+O sistema DEVE possuir autenticação própria, independente do Replit.
+
+Requisitos:
+- Login próprio do sistema
+- Cadastro de usuários
+- Senhas armazenadas de forma segura (hash + salt)
+- Controle de sessão com JWT
+- Logout
+- Proteção de rotas no frontend e backend
+- Nenhum uso de autenticação do Replit
+
+Perfis de usuário:
+- Admin
+- Resolvedor (Atendente)
+- Usuário Final
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔐 CONTROLE DE ACESSO E ROTAS
+━━━━━━━━━━━━━━━━━━━━━━
+Implementar URLs distintas por tipo de usuário, com validação real de permissões.
+
+### Estrutura de rotas:
+
+- **Usuário Final**
+  - URL base: `/portal`
+  - Pode:
+    - Criar tickets
+    - Acompanhar tickets
+    - Responder tickets
+    - Avaliar atendimento
+  - NÃO pode acessar áreas administrativas
+
+- **Resolvedor (Atendente)**
+  - URL base: `/dashboard`
+  - Pode:
+    - Gerenciar e resolver tickets
+    - Alterar status e prioridade
+    - Criar notas internas
+  - Também pode acessar `/portal` para abrir tickets para outras áreas
+
+- **Admin**
+  - URL base: `/admin`
+  - Acesso total ao sistema
+  - Pode acessar todas as rotas
+
+Qualquer acesso indevido via URL deve ser bloqueado no backend.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧩 FUNCIONALIDADES DO MVP
+━━━━━━━━━━━━━━━━━━━━━━
+
+### 1️⃣ Gestão de Tickets
+- Criar ticket com:
+  - Título
+  - Descrição
+  - Categoria
+  - Prioridade (Baixa, Média, Alta, Crítica)
+  - Upload de anexos
+- Número único do ticket
+- Status:
+  - Aberto
+  - Em andamento
+  - Aguardando usuário
+  - Resolvido
+  - Fechado
+- Histórico completo de mensagens
+
+### 2️⃣ Portal do Usuário (`/portal`)
+- Dashboard simples
+- Lista de tickets
+- Visualização detalhada
+- Resposta em tickets
+- Avaliação do atendimento (1 a 5 estrelas)
+
+### 3️⃣ Painel do Resolvedor (`/dashboard`)
+- Visualização por filas de atendimento
+- Filtros por status, prioridade e categoria
+- Busca rápida
+- Assumir / transferir tickets
+- Notas internas (privadas)
+- Alterar status e prioridade
+
+### 4️⃣ Dashboard Admin (`/admin`)
+- Visão geral dos tickets
+- Indicadores:
+  - Tickets abertos
+  - Tickets resolvidos
+  - SLA cumprido vs estourado
+- Interface simples e visual
+
+━━━━━━━━━━━━━━━━━━━━━━
+⏱️ SLA (VERSÃO MVP)
+━━━━━━━━━━━━━━━━━━━━━━
+- SLA definido por prioridade
+- Contador de tempo de SLA
+- Indicação visual quando próximo de estourar
+- Flag de SLA estourado
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+🗄️ BANCO DE DADOS (OBRIGATÓRIO)
+━━━━━━━━━━━━━━━━━━━━━━
+Utilizar PostgreSQL no Neon como banco de dados principal.
+
+String de conexão (usar variáveis de ambiente):
+postgresql://neondb_owner:npg_50xlzQdOFWvA@ep-delicate-star-ac7ht2d9-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+O banco deve armazenar:
+- Usuários
+- Perfis e permissões
+- Tickets
+- Mensagens dos tickets
+- Avaliações
+- SLAs
+
+━━━━━━━━━━━━━━━━━━━━━━
+🛠️ DIRETRIZES TÉCNICAS
+━━━━━━━━━━━━━━━━━━━━━━
+- Frontend: React
+- Backend: Node.js
+- Banco: PostgreSQL (Neon)
+- Autenticação: JWT
+- Código organizado e modular
+- Separação clara entre frontend e backend
+- Backend preparado para multi-tenant futuramente
+- Persistência real de dados (nada em memória)
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧠 EXPERIÊNCIA DO USUÁRIO
+━━━━━━━━━━━━━━━━━━━━━━
+- Fluxos simples
+- Poucos cliques
+- Estados vazios explicativos
+- Mensagens claras
+- Interface que guia o usuário naturalmente
+
+━━━━━━━━━━━━━━━━━━━━━━
+🚀 RESULTADO ESPERADO
+━━━━━━━━━━━━━━━━━━━━━━
+Um MVP funcional, moderno, bonito e profissional, com:
+- Autenticação própria
+- Banco de dados externo (Neon)
+- Controle real de permissões
+
+Pronto para:
+- Demonstrações
+- Uso real
+- Evolução para um SaaS completo
