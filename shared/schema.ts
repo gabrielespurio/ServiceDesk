@@ -4,8 +4,8 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "resolver", "user"]);
-export const ticketStatusEnum = pgEnum("ticket_status", ["open", "in_progress", "waiting_user", "resolved", "closed"]);
-export const ticketPriorityEnum = pgEnum("ticket_priority", ["low", "medium", "high", "critical"]);
+export const ticketStatusEnum = pgEnum("ticket_status", ["aberto", "em_andamento", "aguardando_usuario", "resolvido", "fechado"]);
+export const ticketPriorityEnum = pgEnum("ticket_priority", ["baixa", "media", "alta", "critica"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

@@ -117,8 +117,8 @@ export class DatabaseStorage implements IStorage {
   async getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }> {
     const allTickets = await db.select().from(tickets);
     const total = allTickets.length;
-    const open = allTickets.filter(t => t.status === "open").length;
-    const resolved = allTickets.filter(t => t.status === "resolved").length;
+    const open = allTickets.filter(t => t.status === "aberto").length;
+    const resolved = allTickets.filter(t => t.status === "resolvido").length;
     
     // Mock avg time for now
     return {

@@ -197,16 +197,16 @@ export async function registerRoutes(
 
     // Create a sample ticket
     await storage.createTicket({
-      title: "Cannot access VPN",
-      description: "I am getting a connection error when trying to connect to the VPN.",
-      category: "Network",
-      priority: "high",
-      status: "open",
+      title: "Não consigo acessar a VPN",
+      description: "Estou recebendo um erro de conexão ao tentar conectar à VPN da empresa.",
+      category: "Rede",
+      priority: "alta",
+      status: "aberto",
       creatorId: user1.id,
       assignedToId: null,
     });
     
-    console.log("Database seeded with initial users and tickets");
+    console.log("Banco de dados semeado com usuários e chamados iniciais");
   }
 
   return httpServer;
