@@ -53,15 +53,15 @@ export default function TicketDetail() {
     updateTicket.mutate({ id: ticketId, status: newStatus as any });
   };
 
-  if (ticketLoading || messagesLoading) return <div className="p-8 text-center">Loading ticket details...</div>;
-  if (!ticket) return <div className="p-8 text-center">Ticket not found</div>;
+  if (ticketLoading || messagesLoading) return <div className="p-8 text-center">Carregando detalhes do chamado...</div>;
+  if (!ticket) return <div className="p-8 text-center">Chamado não encontrado</div>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex items-center justify-between shrink-0">
         <Button variant="ghost" className="pl-0" onClick={() => setLocation(isResolver ? "/dashboard" : "/portal")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          Voltar
         </Button>
         {isResolver && (
           <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export default function TicketDetail() {
                 </div>
              </div>
              
-             <Separator className="my-4" label="Conversation Started" />
+             <Separator className="my-4" label="Conversa Iniciada" />
 
              {messages?.map((msg) => {
                const isMe = msg.userId === user?.id;
@@ -148,7 +148,7 @@ export default function TicketDetail() {
                    <Switch id="internal-mode" checked={isInternal} onCheckedChange={setIsInternal} />
                    <Label htmlFor="internal-mode" className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                      <Lock className="w-3 h-3" />
-                     Internal Note
+                     Nota Interna
                    </Label>
                  </div>
                )}
@@ -156,7 +156,7 @@ export default function TicketDetail() {
                  <Textarea 
                    value={newMessage}
                    onChange={(e) => setNewMessage(e.target.value)}
-                   placeholder={isInternal ? "Add an internal note (visible only to team)..." : "Type a reply..."}
+                   placeholder={isInternal ? "Adicionar uma nota interna (visível apenas para a equipe)..." : "Digite uma resposta..."}
                    className={cn("min-h-[80px] resize-none shadow-sm", isInternal && "bg-yellow-50/50 border-yellow-200 focus-visible:ring-yellow-400")}
                    onKeyDown={(e) => {
                      if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,11 +182,11 @@ export default function TicketDetail() {
         <div className="hidden lg:block w-80 space-y-6">
            <Card className="border-border/50 shadow-sm">
              <CardHeader>
-               <CardTitle className="text-sm font-medium">Ticket Details</CardTitle>
+               <CardTitle className="text-sm font-medium">Detalhes do Chamado</CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
                <div className="flex flex-col gap-1">
-                 <span className="text-xs text-muted-foreground">Requester</span>
+                 <span className="text-xs text-muted-foreground">Solicitante</span>
                  <div className="flex items-center gap-2 text-sm font-medium">
                    <Avatar className="w-6 h-6">
                      <AvatarFallback>{ticket.creator.fullName[0]}</AvatarFallback>
@@ -198,17 +198,17 @@ export default function TicketDetail() {
                <Separator />
                <div className="grid grid-cols-2 gap-4">
                  <div className="flex flex-col gap-1">
-                   <span className="text-xs text-muted-foreground">Category</span>
+                   <span className="text-xs text-muted-foreground">Categoria</span>
                    <span className="text-sm font-medium capitalize">{ticket.category}</span>
                  </div>
                  <div className="flex flex-col gap-1">
-                   <span className="text-xs text-muted-foreground">Priority</span>
+                   <span className="text-xs text-muted-foreground">Prioridade</span>
                    <PriorityBadge priority={ticket.priority} />
                  </div>
                </div>
                <Separator />
                <div className="flex flex-col gap-1">
-                 <span className="text-xs text-muted-foreground">Assigned To</span>
+                 <span className="text-xs text-muted-foreground">Atribuído a</span>
                  <div className="flex items-center gap-2 text-sm font-medium">
                    {ticket.assignee ? (
                      <>
@@ -218,7 +218,7 @@ export default function TicketDetail() {
                         {ticket.assignee.fullName}
                      </>
                    ) : (
-                     <span className="text-muted-foreground italic">Unassigned</span>
+                     <span className="text-muted-foreground italic">Não atribuído</span>
                    )}
                  </div>
                </div>
@@ -231,7 +231,7 @@ export default function TicketDetail() {
 }
 
 function SelectStatus({ currentStatus, onChange }: { currentStatus: string, onChange: (s: string) => void }) {
-  const statuses = ["open", "in_progress", "waiting_user", "resolved", "closed"];
+  const statuses = ["aberto", "em_andamento", "aguardando_usuario", "resolvido", "fechado"];
   return (
     <select 
       className="h-9 px-3 py-1 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

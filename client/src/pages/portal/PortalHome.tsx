@@ -22,20 +22,20 @@ export default function PortalHome() {
   }
 
   const myTickets = tickets || [];
-  const openCount = myTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed').length;
-  const resolvedCount = myTickets.filter(t => t.status === 'resolved').length;
+  const openCount = myTickets.filter(t => t.status !== 'resolvido' && t.status !== 'fechado').length;
+  const resolvedCount = myTickets.filter(t => t.status === 'resolvido').length;
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.fullName.split(' ')[0]}</h1>
-          <p className="text-muted-foreground mt-1">Here's an overview of your support requests.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Bem-vindo, {user?.fullName.split(' ')[0]}</h1>
+          <p className="text-muted-foreground mt-1">Aqui está uma visão geral das suas solicitações de suporte.</p>
         </div>
         <Link href="/portal/new">
           <Button className="shadow-lg shadow-primary/25">
             <Plus className="w-4 h-4 mr-2" />
-            New Ticket
+            Novo Chamado
           </Button>
         </Link>
       </div>
@@ -43,36 +43,36 @@ export default function PortalHome() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Open Tickets</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Chamados Abertos</CardTitle>
             <Clock className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{openCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pending resolution</p>
+            <p className="text-xs text-muted-foreground mt-1">Aguardando resolução</p>
           </CardContent>
         </Card>
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Resolved</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Resolvidos</CardTitle>
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{resolvedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Successfully closed</p>
+            <p className="text-xs text-muted-foreground mt-1">Concluídos com sucesso</p>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-border/50 shadow-md">
         <CardHeader>
-          <CardTitle>Recent Tickets</CardTitle>
-          <CardDescription>View and manage your current support requests.</CardDescription>
+          <CardTitle>Chamados Recentes</CardTitle>
+          <CardDescription>Visualize e gerencie suas solicitações de suporte atuais.</CardDescription>
         </CardHeader>
         <CardContent>
           {myTickets.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>No tickets found. Need help? Create a new ticket.</p>
+              <p>Nenhum chamado encontrado. Precisa de ajuda? Crie um novo chamado.</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -91,7 +91,7 @@ export default function PortalHome() {
                         <span>•</span>
                         <span>{ticket.category}</span>
                         <span>•</span>
-                        <span>{format(new Date(ticket.createdAt!), 'MMM d, yyyy')}</span>
+                        <span>{format(new Date(ticket.createdAt!), 'dd/MM/yyyy')}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">

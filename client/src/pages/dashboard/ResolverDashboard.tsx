@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
 import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Search, UserCheck } from "lucide-react";
 
 export default function ResolverDashboard() {
@@ -26,7 +27,7 @@ export default function ResolverDashboard() {
   // Fetch tickets based on active tab
   const filters = {
     assignedToMe: activeTab === "my-queue" ? "true" : undefined,
-    status: activeTab === "all-open" ? "open" : undefined,
+    status: activeTab === "all-open" ? "aberto" : undefined,
   };
   
   const { data: tickets, isLoading } = useTickets(filters);
@@ -34,7 +35,7 @@ export default function ResolverDashboard() {
 
   const handleAssignToMe = (ticketId: number) => {
     if (!user) return;
-    updateTicket.mutate({ id: ticketId, assignedToId: user.id, status: 'in_progress' });
+    updateTicket.mutate({ id: ticketId, assignedToId: user.id, status: 'em_andamento' });
   };
 
   const filteredTickets = tickets || [];
@@ -42,17 +43,17 @@ export default function ResolverDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Agent Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Painel de Atendimento</h1>
         <div className="flex gap-2">
-           <Input className="w-[300px]" placeholder="Search tickets..." prefix={<Search className="w-4 h-4 text-muted-foreground" />} />
+           <Input className="w-[300px]" placeholder="Buscar chamados..." prefix={<Search className="w-4 h-4 text-muted-foreground" />} />
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="my-queue">My Queue</TabsTrigger>
-          <TabsTrigger value="all-open">Unassigned / Open</TabsTrigger>
-          <TabsTrigger value="all">All Tickets</TabsTrigger>
+          <TabsTrigger value="my-queue">Minha Fila</TabsTrigger>
+          <TabsTrigger value="all-open">Não Atribuídos / Abertos</TabsTrigger>
+          <TabsTrigger value="all">Todos os Chamados</TabsTrigger>
         </TabsList>
 
         <div className="border rounded-xl bg-card shadow-sm overflow-hidden">
@@ -60,22 +61,22 @@ export default function ResolverDashboard() {
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead className="w-[150px]">Requester</TableHead>
+                <TableHead>Assunto</TableHead>
+                <TableHead className="w-[150px]">Solicitante</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
-                <TableHead className="w-[100px]">Priority</TableHead>
-                <TableHead className="w-[150px]">Created</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead className="w-[100px]">Prioridade</TableHead>
+                <TableHead className="w-[150px]">Criado em</TableHead>
+                <TableHead className="w-[100px] text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell>
+                  <TableCell colSpan={7} className="h-24 text-center">Carregando...</TableCell>
                 </TableRow>
               ) : filteredTickets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No tickets found.</TableCell>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">Nenhum chamado encontrado.</TableCell>
                 </TableRow>
               ) : (
                 filteredTickets.map((ticket) => (
@@ -100,7 +101,7 @@ export default function ResolverDashboard() {
                     <TableCell><StatusBadge status={ticket.status} /></TableCell>
                     <TableCell><PriorityBadge priority={ticket.priority} /></TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {formatDistanceToNow(new Date(ticket.createdAt!), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(ticket.createdAt!), { addSuffix: true, locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-right">
                       {!ticket.assignedToId && (
@@ -108,7 +109,7 @@ export default function ResolverDashboard() {
                           size="sm" 
                           variant="ghost" 
                           className="h-8 w-8 p-0" 
-                          title="Assign to me"
+                          title="Atribuir a mim"
                           onClick={() => handleAssignToMe(ticket.id)}
                         >
                           <UserCheck className="w-4 h-4 text-muted-foreground group-hover:text-primary" />

@@ -26,10 +26,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowLeft } from "lucide-react";
 
 const ticketFormSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  category: z.string().min(1, "Please select a category"),
-  priority: z.enum(["low", "medium", "high", "critical"]),
-  description: z.string().min(10, "Please provide more detail"),
+  title: z.string().min(5, "Título deve ter pelo menos 5 caracteres"),
+  category: z.string().min(1, "Por favor selecione uma categoria"),
+  priority: z.enum(["baixa", "media", "alta", "critica"]),
+  description: z.string().min(10, "Por favor forneça mais detalhes"),
 });
 
 export default function NewTicket() {
@@ -41,7 +41,7 @@ export default function NewTicket() {
     defaultValues: {
       title: "",
       category: "",
-      priority: "medium",
+      priority: "media",
       description: "",
     },
   });
@@ -62,12 +62,12 @@ export default function NewTicket() {
         onClick={() => setLocation("/portal")}
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Tickets
+        Voltar para Chamados
       </Button>
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Create Request</h1>
-        <p className="text-muted-foreground">Describe your issue and we'll help you resolve it.</p>
+        <h1 className="text-3xl font-bold">Criar Solicitação</h1>
+        <p className="text-muted-foreground">Descreva seu problema e ajudaremos a resolvê-lo.</p>
       </div>
 
       <Card className="border-border/50 shadow-lg">
@@ -79,9 +79,9 @@ export default function NewTicket() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subject</FormLabel>
+                    <FormLabel>Assunto</FormLabel>
                     <FormControl>
-                      <Input placeholder="Brief summary of the issue" {...field} />
+                      <Input placeholder="Resumo breve do problema" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -94,19 +94,19 @@ export default function NewTicket() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Categoria</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
+                            <SelectValue placeholder="Selecione a categoria" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="hardware">Hardware</SelectItem>
                           <SelectItem value="software">Software</SelectItem>
-                          <SelectItem value="access">Access / Login</SelectItem>
-                          <SelectItem value="billing">Billing</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="acesso">Acesso / Login</SelectItem>
+                          <SelectItem value="financeiro">Financeiro</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -119,18 +119,18 @@ export default function NewTicket() {
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority</FormLabel>
+                      <FormLabel>Prioridade</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select priority" />
+                            <SelectValue placeholder="Selecione a prioridade" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="critical">Critical</SelectItem>
+                          <SelectItem value="baixa">Baixa</SelectItem>
+                          <SelectItem value="media">Média</SelectItem>
+                          <SelectItem value="alta">Alta</SelectItem>
+                          <SelectItem value="critica">Crítica</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -144,16 +144,16 @@ export default function NewTicket() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Please detail the steps to reproduce the issue..." 
+                        placeholder="Por favor, detalhe os passos para reproduzir o problema..." 
                         className="min-h-[150px] resize-none"
                         {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      Include any error messages or screenshots if applicable.
+                      Inclua mensagens de erro ou capturas de tela, se aplicável.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -167,7 +167,7 @@ export default function NewTicket() {
                   className="w-full sm:w-auto min-w-[150px]"
                   disabled={createTicket.isPending}
                 >
-                  {createTicket.isPending ? "Submitting..." : "Submit Ticket"}
+                  {createTicket.isPending ? "Enviando..." : "Enviar Chamado"}
                 </Button>
               </div>
             </form>

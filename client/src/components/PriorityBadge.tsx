@@ -7,30 +7,30 @@ import {
 import { cn } from "@/lib/utils";
 
 const priorityConfig: Record<string, { label: string; icon: any; className: string }> = {
-  low: { 
-    label: "Low", 
+  baixa: { 
+    label: "Baixa", 
     icon: ArrowDown, 
     className: "text-slate-500" 
   },
-  medium: { 
-    label: "Medium", 
+  media: { 
+    label: "Média", 
     icon: ArrowRight, 
     className: "text-blue-500" 
   },
-  high: { 
-    label: "High", 
+  alta: { 
+    label: "Alta", 
     icon: ArrowUp, 
     className: "text-orange-500" 
   },
-  critical: { 
-    label: "Critical", 
+  critica: { 
+    label: "Crítica", 
     icon: AlertTriangle, 
     className: "text-red-600 font-bold" 
   },
 };
 
 export function PriorityBadge({ priority }: { priority: string }) {
-  const config = priorityConfig[priority] || priorityConfig.medium;
+  const config = priorityConfig[priority] || priorityConfig.media;
   const Icon = config.icon;
   
   return (

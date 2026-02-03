@@ -20,8 +20,8 @@ import { insertUserSchema } from "@shared/schema";
 import { Ticket } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1, "Usuário é obrigatório"),
+  password: z.string().min(1, "Senha é obrigatória"),
 });
 
 export default function AuthPage() {
@@ -54,21 +54,21 @@ export default function AuthPage() {
              <div className="p-3 bg-primary rounded-xl shadow-lg shadow-primary/25 mb-4">
                 <Ticket className="w-8 h-8 text-white" />
              </div>
-             <h1 className="text-3xl font-bold tracking-tighter">Welcome back</h1>
-             <p className="text-muted-foreground">Enter your credentials to access your account</p>
+             <h1 className="text-3xl font-bold tracking-tighter">Bem-vindo de volta</h1>
+             <p className="text-muted-foreground">Insira suas credenciais para acessar sua conta</p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="register">Cadastro</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <Card className="border-border/50 shadow-xl shadow-black/5">
                 <CardHeader>
                   <CardTitle>Login</CardTitle>
-                  <CardDescription>Sign in to your account.</CardDescription>
+                  <CardDescription>Entre na sua conta.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...loginForm}>
@@ -78,7 +78,7 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Usuário</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -91,7 +91,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Senha</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>
@@ -104,7 +104,7 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={isLoggingIn}
                       >
-                        {isLoggingIn ? "Signing in..." : "Sign In"}
+                        {isLoggingIn ? "Entrando..." : "Entrar"}
                       </Button>
                     </form>
                   </Form>
@@ -115,8 +115,8 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card className="border-border/50 shadow-xl shadow-black/5">
                 <CardHeader>
-                  <CardTitle>Create Account</CardTitle>
-                  <CardDescription>Enter your details to get started.</CardDescription>
+                  <CardTitle>Criar Conta</CardTitle>
+                  <CardDescription>Insira seus dados para começar.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
@@ -126,9 +126,9 @@ export default function AuthPage() {
                         name="fullName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Name</FormLabel>
+                            <FormLabel>Nome Completo</FormLabel>
                             <FormControl>
-                              <Input placeholder="John Doe" {...field} />
+                              <Input placeholder="João Silva" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -139,9 +139,9 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>E-mail</FormLabel>
                             <FormControl>
-                              <Input type="email" placeholder="john@example.com" {...field} />
+                              <Input type="email" placeholder="joao@exemplo.com" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -153,7 +153,7 @@ export default function AuthPage() {
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Username</FormLabel>
+                              <FormLabel>Usuário</FormLabel>
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
@@ -166,7 +166,7 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Password</FormLabel>
+                              <FormLabel>Senha</FormLabel>
                               <FormControl>
                                 <Input type="password" {...field} />
                               </FormControl>
@@ -180,7 +180,7 @@ export default function AuthPage() {
                         className="w-full" 
                         disabled={isRegistering}
                       >
-                        {isRegistering ? "Creating..." : "Create Account"}
+                        {isRegistering ? "Criando..." : "Criar Conta"}
                       </Button>
                     </form>
                   </Form>
@@ -194,8 +194,8 @@ export default function AuthPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-purple-600 opacity-90" />
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop')] opacity-20 bg-cover bg-center mix-blend-overlay" />
         <div className="relative z-10 max-w-lg text-center space-y-6">
-          <h2 className="text-4xl font-bold">Fast, reliable support for everyone.</h2>
-          <p className="text-lg opacity-90">Manage tickets, track issues, and resolve problems faster with our intuitive helpdesk platform.</p>
+          <h2 className="text-4xl font-bold">Suporte rápido e confiável para todos.</h2>
+          <p className="text-lg opacity-90">Gerencie chamados, acompanhe problemas e resolva dificuldades mais rápido com nossa plataforma intuitiva.</p>
         </div>
       </div>
     </div>
