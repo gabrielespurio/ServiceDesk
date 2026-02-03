@@ -143,13 +143,11 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
     if (!over) return;
 
-    // Adding from sidebar
     const isSidebarItem = active.data.current?.isSidebarItem;
-    const isOverCanvas = over.id === "droppable-canvas" || fields.some(f => f.id === over.id);
 
     if (isSidebarItem) {
       const newField: FormField = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: `field-${Math.random().toString(36).substr(2, 9)}`,
         type: active.data.current.type,
         label: active.data.current.label,
         required: false,
