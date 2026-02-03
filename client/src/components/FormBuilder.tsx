@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useDraggable, useDroppable, DndContext, DragOverlay, closestCenter } from "@dnd-kit/core";
+import { useDraggable, useDroppable, DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,32 +10,45 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Type, List, ChevronDown, AlignLeft, Trash2, GripVertical } from "lucide-react";
 
-const FIELD_TYPES = [
+interface FieldType {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const FIELD_TYPES: FieldType[] = [
   { id: "text", label: "Campo tipo Texto", icon: Type },
   { id: "list", label: "Campo tipo Lista", icon: List },
   { id: "dropdown", label: "Dropdown", icon: ChevronDown },
   { id: "textarea", label: "Campo tipo Textarea", icon: AlignLeft },
 ];
 
-function DraggableSidebarItem({ type, label, icon: Icon }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+interface FormField {
+  id: string;
+  type: string;
+  label: string;
+  required?: boolean;
+}
+
+interface DraggableSidebarItemProps {
+  type: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+function DraggableSidebarItem({ type, label, icon: Icon }: DraggableSidebarItemProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `sidebar-${type}`,
     data: { type, label, isSidebarItem: true },
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 9999,
-  } : undefined;
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...listeners}
       {...attributes}
       className={`flex items-center gap-3 p-3 bg-card border rounded-md cursor-grab hover:bg-accent transition-colors ${
-        isDragging ? "opacity-0" : ""
+        isDragging ? "opacity-50 border-primary" : ""
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -44,7 +57,14 @@ function DraggableSidebarItem({ type, label, icon: Icon }) {
   );
 }
 
-function SortableField({ id, field, onRemove, onChange }) {
+interface SortableFieldProps {
+  id: string;
+  field: FormField;
+  onRemove: (id: string) => void;
+  onChange: (id: string, updates: Partial<FormField>) => void;
+}
+
+function SortableField({ id, field, onRemove, onChange }: SortableFieldProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -97,43 +117,41 @@ function SortableField({ id, field, onRemove, onChange }) {
   );
 }
 
-export default function FormBuilder({ initialData, onSave, onCancel }) {
+interface FormBuilderProps {
+  initialData?: {
+    name: string;
+    description: string;
+    fields: string;
+  };
+  onSave: (data: { name: string; description: string; fields: string }) => void;
+  onCancel: () => void;
+}
+
+export default function FormBuilder({ initialData, onSave, onCancel }: FormBuilderProps) {
   const [formName, setFormName] = useState(initialData?.name || "");
   const [formDescription, setFormDescription] = useState(initialData?.description || "");
-  const [fields, setFields] = useState(initialData?.fields ? JSON.parse(initialData.fields) : []);
-  const [activeId, setActiveId] = useState(null);
+  const [fields, setFields] = useState<FormField[]>(initialData?.fields ? JSON.parse(initialData.fields) : []);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const handleDragStart = (event) => {
+  const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     setActiveId(null);
 
     if (!over) return;
 
     // Adding from sidebar
-    if (active.data.current?.isSidebarItem) {
-      const newField = {
+    if (active.data.current?.isSidebarItem && over.id === "droppable-canvas") {
+      const newField: FormField = {
         id: Math.random().toString(36).substr(2, 9),
         type: active.data.current.type,
         label: active.data.current.label,
         required: false,
       };
-      
-      // If dropped over a specific field, insert after it
-      if (over.id !== "droppable-canvas") {
-        setFields((prev) => {
-          const overIndex = prev.findIndex((f) => f.id === over.id);
-          const newFields = [...prev];
-          newFields.splice(overIndex + 1, 0, newField);
-          return newFields;
-        });
-      } else {
-        // Dropped on the canvas general area
-        setFields((prev) => [...prev, newField]);
-      }
+      setFields((prev) => [...prev, newField]);
       return;
     }
 
@@ -147,11 +165,11 @@ export default function FormBuilder({ initialData, onSave, onCancel }) {
     }
   };
 
-  const removeField = (id) => {
+  const removeField = (id: string) => {
     setFields(fields.filter(f => f.id !== id));
   };
 
-  const updateField = (id, updates) => {
+  const updateField = (id: string, updates: Partial<FormField>) => {
     setFields(fields.map(f => f.id === id ? { ...f, ...updates } : f));
   };
 
@@ -160,7 +178,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }) {
   });
 
   return (
-    <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-full gap-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
@@ -201,12 +219,12 @@ export default function FormBuilder({ initialData, onSave, onCancel }) {
 
             <div
               ref={setCanvasRef}
-              className={`flex-1 rounded-xl border-2 border-dashed p-6 transition-colors ${
+              className={`flex-1 rounded-xl border-2 border-dashed p-6 transition-colors min-h-[400px] ${
                 isOver ? "bg-primary/5 border-primary" : "border-muted-foreground/20"
               }`}
             >
               {fields.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-2 text-muted-foreground">
+                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center space-y-2 text-muted-foreground">
                   <p className="text-lg font-medium">Arraste os campos aqui</p>
                   <p className="text-sm">Selecione campos no menu à direita para começar a montar seu formulário.</p>
                 </div>
@@ -242,15 +260,16 @@ export default function FormBuilder({ initialData, onSave, onCancel }) {
 
       <DragOverlay dropAnimation={null}>
         {activeId && activeId.toString().startsWith("sidebar-") ? (
-          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg cursor-grabbing w-[200px]">
+          <div className="flex items-center gap-3 p-3 bg-primary text-primary-foreground border rounded-md shadow-lg cursor-grabbing w-[200px] opacity-90">
             {(() => {
               const type = activeId.toString().replace("sidebar-", "");
-              const Icon = FIELD_TYPES.find(t => t.id === type)?.icon || Type;
-              const label = FIELD_TYPES.find(t => t.id === type)?.label;
+              const fieldType = FIELD_TYPES.find(t => t.id === type);
+              if (!fieldType) return null;
+              const Icon = fieldType.icon;
               return (
                 <>
                   <Icon className="h-4 w-4" />
-                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-sm font-medium">{fieldType.label}</span>
                 </>
               );
             })()}
