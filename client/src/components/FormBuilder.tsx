@@ -16,12 +16,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface VisibilityRule {
+  field: string;
+  operator: string;
+  value: string;
+}
+
 interface FormField {
   id: string;
   type: string;
   label: string;
   required: boolean;
   options?: string[];
+  visibilityRules?: VisibilityRule[];
 }
 
 interface FormBuilderProps {
@@ -84,6 +91,40 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
   const toggleFieldRequired = (id: string) => {
     setFields(fields.map(f => f.id === id ? { ...f, required: !f.required } : f));
+  };
+
+  const addVisibilityRule = (fieldId: string) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId) {
+        const newRule: VisibilityRule = {
+          field: "field",
+          operator: "equals",
+          value: ""
+        };
+        return { ...f, visibilityRules: [...(f.visibilityRules || []), newRule] };
+      }
+      return f;
+    }));
+  };
+
+  const updateVisibilityRule = (fieldId: string, index: number, updates: Partial<VisibilityRule>) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId && f.visibilityRules) {
+        const newRules = [...f.visibilityRules];
+        newRules[index] = { ...newRules[index], ...updates };
+        return { ...f, visibilityRules: newRules };
+      }
+      return f;
+    }));
+  };
+
+  const removeVisibilityRule = (fieldId: string, index: number) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId && f.visibilityRules) {
+        return { ...f, visibilityRules: f.visibilityRules.filter((_, i) => i !== index) };
+      }
+      return f;
+    }));
   };
 
   const addOption = (fieldId: string) => {
@@ -337,15 +378,111 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
             </TabsContent>
 
             <TabsContent value="visibility" className="space-y-4 py-4">
-              <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
-                <Settings2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <h3 className="font-medium">Regras de Visibilidade</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Defina condições para que este campo seja exibido no formulário.
-                </p>
-                <Button variant="outline" size="sm" className="mt-4" disabled>
-                  Adicionar Condição
-                </Button>
+              <div className="space-y-4">
+                {(!editingField?.visibilityRules || editingField.visibilityRules.length === 0) ? (
+                  <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                    <Settings2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <h3 className="font-medium">Regras de Visibilidade</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Defina condições para que este campo seja exibido no formulário.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4"
+                      onClick={() => editingField && addVisibilityRule(editingField.id)}
+                      data-testid="button-add-first-rule"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Condição
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {editingField.visibilityRules.map((rule, index) => (
+                        <div key={index} className="flex gap-2 items-end bg-muted/20 p-3 rounded-lg border relative group">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Campo</Label>
+                              <Select 
+                                value={rule.field} 
+                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { field: val })}
+                              >
+                                <SelectTrigger className="h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="field">Campo</SelectItem>
+                                  <SelectItem value="status">Status do ticket</SelectItem>
+                                  <SelectItem value="sla">SLA</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Operador</Label>
+                              <Select 
+                                value={rule.operator} 
+                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { operator: val })}
+                              >
+                                <SelectTrigger className="h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {rule.field === "field" && (
+                                    <>
+                                      <SelectItem value="equals">Igual a</SelectItem>
+                                      <SelectItem value="not_equals">Diferente de</SelectItem>
+                                      <SelectItem value="contains">Contém</SelectItem>
+                                    </>
+                                  )}
+                                  {rule.field === "status" && (
+                                    <>
+                                      <SelectItem value="equals">É</SelectItem>
+                                      <SelectItem value="not_equals">Não é</SelectItem>
+                                    </>
+                                  )}
+                                  {rule.field === "sla" && (
+                                    <>
+                                      <SelectItem value="overdue">Atrasado</SelectItem>
+                                      <SelectItem value="within">No prazo</SelectItem>
+                                    </>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
+                              <Input 
+                                value={rule.value}
+                                onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
+                                className="h-9"
+                                placeholder="Digite o valor..."
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeVisibilityRule(editingField.id, index)}
+                            className="h-9 w-9 text-destructive hover:bg-destructive/10 shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full border-dashed"
+                      onClick={() => addVisibilityRule(editingField.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar outra condição
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
