@@ -5,7 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Type, List, ChevronDown, AlignLeft } from "lucide-react";
+import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface FormField {
   id: string;
@@ -209,42 +217,65 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                       </div>
 
                       {(field.type === "dropdown" || field.type === "list") && (
-                        <div className="space-y-3 pt-2">
-                          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções da Lista</Label>
-                          <div className="space-y-2">
-                            {field.options?.map((option, index) => (
-                              <div key={index} className="flex gap-2">
-                                <Input
-                                  value={option}
-                                  onChange={(e) => updateOption(field.id, index, e.target.value)}
-                                  placeholder={`Opção ${index + 1}`}
-                                  className="h-9"
-                                  data-testid={`input-option-${field.id}-${index}`}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeOption(field.id, index)}
-                                  className="h-9 w-9 text-destructive"
-                                  disabled={field.options!.length <= 1}
-                                  data-testid={`button-remove-option-${field.id}-${index}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addOption(field.id)}
-                              className="w-full h-8 border-dashed"
-                              data-testid={`button-add-option-${field.id}`}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-fit h-8 gap-2"
+                              data-testid={`button-configure-options-${field.id}`}
                             >
-                              <Plus className="h-3 w-3 mr-2" />
-                              Adicionar Opção
+                              <Settings2 className="h-3.5 w-3.5" />
+                              Configurar Opções ({field.options?.filter(o => o.trim()).length || 0})
                             </Button>
-                          </div>
-                        </div>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Configurar Opções: {field.label}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções da Lista</Label>
+                              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                {field.options?.map((option, index) => (
+                                  <div key={index} className="flex gap-2">
+                                    <Input
+                                      value={option}
+                                      onChange={(e) => updateOption(field.id, index, e.target.value)}
+                                      placeholder={`Opção ${index + 1}`}
+                                      className="h-9"
+                                      data-testid={`input-option-${field.id}-${index}`}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeOption(field.id, index)}
+                                      className="h-9 w-9 text-destructive"
+                                      disabled={field.options!.length <= 1}
+                                      data-testid={`button-remove-option-${field.id}-${index}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addOption(field.id)}
+                                className="w-full h-8 border-dashed"
+                                data-testid={`button-add-option-${field.id}`}
+                              >
+                                <Plus className="h-3 w-3 mr-2" />
+                                Adicionar Opção
+                              </Button>
+                            </div>
+                            <DialogFooter>
+                              <DialogTrigger asChild>
+                                <Button type="button">Concluído</Button>
+                              </DialogTrigger>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       )}
                     </div>
                     <Button
