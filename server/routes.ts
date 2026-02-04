@@ -166,6 +166,67 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  app.get(api.users.list.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const users = await storage.getUsers();
+    res.json(users);
+  });
+
+  app.post(api.users.create.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const input = api.users.create.input.parse(req.body);
+      const existingUser = await storage.getUserByUsername(input.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Usuário já existe" });
+      }
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+      const user = await storage.createUser({ ...input, password: hashedPassword });
+      res.status(201).json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.patch(api.users.update.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const id = Number(req.params.id);
+      const input = api.users.update.input.parse(req.body);
+      
+      if (input.password) {
+        input.password = await bcrypt.hash(input.password, 10);
+      }
+      
+      const user = await storage.updateUser(id, input);
+      if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+      res.json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.delete(api.users.delete.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const success = await storage.deleteUser(Number(req.params.id));
+    if (!success) return res.status(404).json({ message: "Usuário não encontrado" });
+    res.json({ message: "Usuário excluído com sucesso" });
+  });
+
   // === FORM ROUTES ===
   app.get(api.forms.list.path, async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {

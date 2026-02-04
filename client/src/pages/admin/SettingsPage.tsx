@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import FormBuilder from "@/components/FormBuilder";
+import UserManagement from "./UserManagement";
 
 const SETTINGS_SECTIONS = [
   { id: "forms", label: "Formulários", icon: FileText },
@@ -209,6 +210,8 @@ export default function SettingsPage() {
               <div className="flex-1 min-h-0">
                 {activeSection === "forms" ? (
                   <FormsSettings />
+                ) : activeSection === "users" ? (
+                  <UserManagement />
                 ) : (
                   <div className="h-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
                     <p className="text-lg font-medium">Módulo em desenvolvimento</p>

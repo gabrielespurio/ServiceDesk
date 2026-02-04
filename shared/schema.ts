@@ -92,6 +92,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 
 // Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const updateUserSchema = insertUserSchema.partial();
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 
