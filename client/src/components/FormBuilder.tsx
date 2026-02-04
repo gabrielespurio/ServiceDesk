@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2, Check } from "lucide-react";
+import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2, Check, Hash, CheckSquare, Calendar, Layers, Calculator } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +36,11 @@ interface FormBuilderProps {
 const FIELD_TYPES = [
   { id: "text", label: "Texto", icon: Type },
   { id: "list", label: "Lista", icon: List },
-  { id: "dropdown", label: "Dropdown", icon: ChevronDown },
+  { id: "number", label: "Número", icon: Hash },
+  { id: "checkbox", label: "Caixa de seleção", icon: CheckSquare },
+  { id: "date", label: "Data", icon: Calendar },
+  { id: "multi-select", label: "Seleção múltipla", icon: Layers },
+  { id: "decimal", label: "Decimal", icon: Calculator },
   { id: "textarea", label: "Textarea", icon: AlignLeft },
 ];
 
@@ -60,16 +64,13 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       type: newFieldType,
       label: newFieldLabel,
       required: newFieldRequired,
-      options: (newFieldType === "list" || newFieldType === "dropdown") ? [""] : undefined,
+      options: (newFieldType === "list" || newFieldType === "dropdown" || newFieldType === "multi-select") ? [""] : undefined,
     };
     
     setFields([...fields, newField]);
     setNewFieldLabel("");
     setNewFieldRequired(false);
-
-    if (newFieldType === "list" || newFieldType === "dropdown") {
-      setEditingFieldId(id);
-    }
+    setEditingFieldId(id);
   };
 
   const removeField = (id: string) => {
@@ -243,7 +244,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                         data-testid={`button-configure-field-${field.id}`}
                       >
                         <Settings2 className="h-3.5 w-3.5" />
-                        {field.type === "dropdown" || field.type === "list" 
+                        {field.type === "list" || field.type === "multi-select" 
                           ? `Configurar Valores (${field.options?.filter(o => o.trim()).length || 0})`
                           : "Configurar Campo"}
                       </Button>
@@ -282,7 +283,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
               </Label>
             </div>
 
-            {(editingField?.type === "list" || editingField?.type === "dropdown") && (
+            {(editingField?.type === "list" || editingField?.type === "multi-select") && (
               <div className="space-y-4">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
