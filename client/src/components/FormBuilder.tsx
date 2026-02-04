@@ -404,7 +404,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                         <div key={index} className="flex gap-2 items-end bg-muted/20 p-3 rounded-lg border relative group">
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                             <div className="space-y-1.5">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Campo</Label>
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Categoria</Label>
                               <Select 
                                 value={rule.field} 
                                 onValueChange={(val) => updateVisibilityRule(editingField.id, index, { field: val })}
@@ -413,7 +413,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="field">Campo</SelectItem>
+                                  <SelectItem value="field">Categoria</SelectItem>
                                   <SelectItem value="status">Status do ticket</SelectItem>
                                   <SelectItem value="sla">SLA</SelectItem>
                                 </SelectContent>
@@ -451,15 +451,17 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
-                              <Input 
-                                value={rule.value}
-                                onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
-                                className="h-9"
-                                placeholder="Digite o valor..."
-                              />
-                            </div>
+                            {rule.field !== "sla" && (
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
+                                <Input 
+                                  value={rule.value}
+                                  onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
+                                  className="h-9"
+                                  placeholder="Digite o valor..."
+                                />
+                              </div>
+                            )}
                           </div>
                           <Button
                             variant="ghost"
