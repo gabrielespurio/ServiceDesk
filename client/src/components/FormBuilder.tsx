@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2, Check, Hash, CheckSquare, Calendar, Layers, Calculator } from "lucide-react";
+import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2, Check, Hash, CheckSquare, Calendar, Layers, Calculator, GripVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,23 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface VisibilityRule {
   field: string;
@@ -53,6 +70,92 @@ const FIELD_TYPES = [
   { id: "textarea", label: "Textarea", icon: AlignLeft },
 ];
 
+interface SortableFieldProps {
+  field: FormField;
+  updateFieldLabel: (id: string, label: string) => void;
+  setEditingFieldId: (id: string) => void;
+  removeField: (id: string) => void;
+}
+
+function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField }: SortableFieldProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const Icon = FIELD_TYPES.find(t => t.id === field.type)?.icon || Type;
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="flex items-start gap-4 p-4 bg-card border rounded-lg shadow-sm group relative"
+    >
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="mt-1 cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      <div className="flex-1 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Input
+              value={field.label}
+              onChange={(e) => updateFieldLabel(field.id, e.target.value)}
+              className="h-8 font-medium border-none focus-visible:ring-0 p-0 bg-transparent"
+              data-testid={`input-field-label-${field.id}`}
+            />
+          </div>
+        </div>
+        
+        <div className="opacity-60 pointer-events-none">
+          {field.type === "text" && <Input disabled placeholder={field.placeholder || "Exemplo de campo de texto"} />}
+          {field.type === "textarea" && <Textarea disabled placeholder={field.placeholder || "Exemplo de área de texto"} className="min-h-[80px]" />}
+          {field.type === "number" && <Input type="number" disabled placeholder={field.placeholder || "0"} />}
+          {field.type === "decimal" && <Input type="number" step="0.01" disabled placeholder={field.placeholder || "0.00"} />}
+        </div>
+
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-fit h-8 gap-2"
+          onClick={() => setEditingFieldId(field.id)}
+          data-testid={`button-configure-field-${field.id}`}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          {["list", "multi-select", "checkbox"].includes(field.type) 
+            ? `Configurar Valores (${field.options?.filter(o => o.trim()).length || 0})`
+            : "Configurar Campo"}
+        </Button>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => removeField(field.id)}
+        className="text-destructive hover:bg-destructive/10"
+        data-testid={`button-remove-field-${field.id}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 export default function FormBuilder({ initialData, onSave, onCancel }: FormBuilderProps) {
   const [formName, setFormName] = useState(initialData?.name || "");
   const [formDescription, setFormDescription] = useState(initialData?.description || "");
@@ -63,6 +166,26 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const [newFieldRequired, setNewFieldRequired] = useState(false);
   
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setFields((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   const addField = () => {
     if (!newFieldLabel.trim()) return;
@@ -261,53 +384,28 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                   <p>Nenhum campo adicionado ainda.</p>
                 </div>
               ) : (
-                fields.map((field) => (
-                  <div key={field.id} className="flex items-start gap-4 p-4 bg-card border rounded-lg shadow-sm group">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1">
-                          {(() => {
-                            const Icon = FIELD_TYPES.find(t => t.id === field.type)?.icon || Type;
-                            return <Icon className="h-4 w-4 text-muted-foreground" />;
-                          })()}
-                          <Input
-                            value={field.label}
-                            onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                            className="h-8 font-medium border-none focus-visible:ring-0 p-0 bg-transparent"
-                            data-testid={`input-field-label-${field.id}`}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="opacity-60 pointer-events-none">
-                        {field.type === "text" && <Input disabled placeholder="Exemplo de campo de texto" />}
-                        {field.type === "textarea" && <Textarea disabled placeholder="Exemplo de área de texto" className="min-h-[80px]" />}
-                      </div>
-
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-fit h-8 gap-2"
-                        onClick={() => setEditingFieldId(field.id)}
-                        data-testid={`button-configure-field-${field.id}`}
-                      >
-                        <Settings2 className="h-3.5 w-3.5" />
-                        {field.type === "list" || field.type === "multi-select" 
-                          ? `Configurar Valores (${field.options?.filter(o => o.trim()).length || 0})`
-                          : "Configurar Campo"}
-                      </Button>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={fields.map((f) => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {fields.map((field) => (
+                        <SortableField
+                          key={field.id}
+                          field={field}
+                          updateFieldLabel={updateFieldLabel}
+                          setEditingFieldId={setEditingFieldId}
+                          removeField={removeField}
+                        />
+                      ))}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeField(field.id)}
-                      className="text-destructive hover:bg-destructive/10"
-                      data-testid={`button-remove-field-${field.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           </CardContent>
