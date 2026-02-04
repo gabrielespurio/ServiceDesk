@@ -12,6 +12,7 @@ interface FormField {
   type: string;
   label: string;
   required?: boolean;
+  options?: string[];
 }
 
 interface FormBuilderProps {
@@ -47,6 +48,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       type: newFieldType,
       label: newFieldLabel,
       required: false,
+      options: (newFieldType === "list" || newFieldType === "dropdown") ? [""] : undefined,
     };
     
     setFields([...fields, newField]);
@@ -59,6 +61,35 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
   const updateFieldLabel = (id: string, label: string) => {
     setFields(fields.map(f => f.id === id ? { ...f, label } : f));
+  };
+
+  const addOption = (fieldId: string) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId) {
+        return { ...f, options: [...(f.options || []), ""] };
+      }
+      return f;
+    }));
+  };
+
+  const updateOption = (fieldId: string, index: number, value: string) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId && f.options) {
+        const newOptions = [...f.options];
+        newOptions[index] = value;
+        return { ...f, options: newOptions };
+      }
+      return f;
+    }));
+  };
+
+  const removeOption = (fieldId: string, index: number) => {
+    setFields(fields.map(f => {
+      if (f.id === fieldId && f.options) {
+        return { ...f, options: f.options.filter((_, i) => i !== index) };
+      }
+      return f;
+    }));
   };
 
   return (
@@ -175,14 +206,44 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                       <div className="opacity-60 pointer-events-none">
                         {field.type === "text" && <Input disabled placeholder="Exemplo de campo de texto" />}
                         {field.type === "textarea" && <Textarea disabled placeholder="Exemplo de área de texto" className="min-h-[80px]" />}
-                        {(field.type === "dropdown" || field.type === "list") && (
-                          <Select disabled>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Opções do campo" />
-                            </SelectTrigger>
-                          </Select>
-                        )}
                       </div>
+
+                      {(field.type === "dropdown" || field.type === "list") && (
+                        <div className="space-y-3 pt-2">
+                          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções da Lista</Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {field.options?.map((option, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={option}
+                                  onChange={(e) => updateOption(field.id, index, e.target.value)}
+                                  placeholder={`Opção ${index + 1}`}
+                                  className="h-8 text-sm"
+                                  data-testid={`input-option-${field.id}-${index}`}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => removeOption(field.id, index)}
+                                  disabled={field.options!.length <= 1}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 border-dashed"
+                              onClick={() => addOption(field.id)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Adicionar Opção
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
