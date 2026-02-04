@@ -189,9 +189,9 @@ export default function SettingsPage() {
         </aside>
 
         {/* Settings Content */}
-        <main className="flex-1 overflow-hidden">
-          <Card className="border-none shadow-none bg-muted/30 h-full">
-            <CardContent className="p-6 h-full flex flex-col">
+        <main className="flex-1 min-h-0">
+          <Card className="border-none shadow-none bg-muted/30 h-full overflow-hidden">
+            <CardContent className="p-6 h-full flex flex-col min-h-0">
               <div className="flex items-center gap-2 mb-6 shrink-0">
                 {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.icon && (
                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                 </h2>
               </div>
               
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0">
                 {activeSection === "forms" ? (
                   <FormsSettings />
                 ) : (

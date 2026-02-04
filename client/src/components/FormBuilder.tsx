@@ -287,7 +287,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const editingField = fields.find(f => f.id === editingFieldId);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] relative overflow-visible -mt-10">
+    <div className="flex flex-col h-full relative overflow-visible">
       <div className="flex justify-between items-center mb-4 shrink-0 bg-background/95 backdrop-blur z-20 py-2">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-lg text-primary">
