@@ -27,6 +27,7 @@ interface FormField {
   type: string;
   label: string;
   required: boolean;
+  placeholder?: string;
   options?: string[];
   visibilityRules?: VisibilityRule[];
 }
@@ -72,7 +73,8 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       type: newFieldType,
       label: newFieldLabel,
       required: newFieldRequired,
-      options: (newFieldType === "list" || newFieldType === "dropdown" || newFieldType === "multi-select") ? [""] : undefined,
+      placeholder: "",
+      options: ["list", "multi-select", "checkbox"].includes(newFieldType) ? [""] : undefined,
     };
     
     setFields([...fields, newField]);
@@ -87,6 +89,10 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
   const updateFieldLabel = (id: string, label: string) => {
     setFields(fields.map(f => f.id === id ? { ...f, label } : f));
+  };
+
+  const updateFieldPlaceholder = (id: string, placeholder: string) => {
+    setFields(fields.map(f => f.id === id ? { ...f, placeholder } : f));
   };
 
   const toggleFieldRequired = (id: string) => {
@@ -332,7 +338,23 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                 </Label>
               </div>
 
-              {(editingField?.type === "list" || editingField?.type === "multi-select") && (
+              {["text", "number", "decimal", "textarea"].includes(editingField?.type || "") && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-field-placeholder">Placeholder do Campo</Label>
+                  <Input
+                    id="edit-field-placeholder"
+                    value={editingField?.placeholder || ""}
+                    onChange={(e) => editingField && updateFieldPlaceholder(editingField.id, e.target.value)}
+                    placeholder="Digite o placeholder que aparecerá no campo..."
+                    data-testid="input-field-placeholder"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    O texto de instrução que aparece dentro do campo quando ele está vazio.
+                  </p>
+                </div>
+              )}
+
+              {["list", "multi-select", "checkbox"].includes(editingField?.type || "") && (
                 <div className="space-y-4">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
