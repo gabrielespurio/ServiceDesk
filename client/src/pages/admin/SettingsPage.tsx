@@ -59,8 +59,15 @@ function FormsSettings() {
       queryClient.invalidateQueries({ queryKey: [api.forms.list.path] });
       setIsBuilderOpen(false);
       setEditingForm(null);
-      toast({ title: "Sucesso", description: "Formulário criado com sucesso" });
+      toast({ title: "Sucesso", description: "Formulário salvo com sucesso" });
     },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Erro ao salvar", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
   });
 
   const deleteFormMutation = useMutation({
