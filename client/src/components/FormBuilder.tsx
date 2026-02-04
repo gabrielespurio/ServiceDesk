@@ -193,17 +193,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                   </Select>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="new-field-required" 
-                    checked={newFieldRequired}
-                    onCheckedChange={(checked) => setNewFieldRequired(!!checked)}
-                  />
-                  <Label htmlFor="new-field-required" className="text-sm font-medium cursor-pointer">
-                    Campo obrigatório para abertura de tickets
-                  </Label>
-                </div>
+              <div className="flex flex-col md:flex-row items-center justify-end gap-4 pt-2">
                 <Button 
                   onClick={addField} 
                   className="w-full md:w-auto"
@@ -238,17 +228,6 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                             data-testid={`input-field-label-${field.id}`}
                           />
                         </div>
-                        <div className="flex items-center gap-2 px-2 py-1 bg-muted/50 rounded-md">
-                          <Checkbox 
-                            id={`required-${field.id}`}
-                            checked={field.required}
-                            onCheckedChange={() => toggleFieldRequired(field.id)}
-                            className="h-4 w-4"
-                          />
-                          <Label htmlFor={`required-${field.id}`} className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
-                            Obrigatório
-                          </Label>
-                        </div>
                       </div>
                       
                       <div className="opacity-60 pointer-events-none">
@@ -256,18 +235,18 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                         {field.type === "textarea" && <Textarea disabled placeholder="Exemplo de área de texto" className="min-h-[80px]" />}
                       </div>
 
-                      {(field.type === "dropdown" || field.type === "list") && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-fit h-8 gap-2"
-                          onClick={() => setEditingFieldId(field.id)}
-                          data-testid={`button-configure-options-${field.id}`}
-                        >
-                          <Settings2 className="h-3.5 w-3.5" />
-                          Configurar Valores ({field.options?.filter(o => o.trim()).length || 0})
-                        </Button>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-fit h-8 gap-2"
+                        onClick={() => setEditingFieldId(field.id)}
+                        data-testid={`button-configure-field-${field.id}`}
+                      >
+                        <Settings2 className="h-3.5 w-3.5" />
+                        {field.type === "dropdown" || field.type === "list" 
+                          ? `Configurar Valores (${field.options?.filter(o => o.trim()).length || 0})`
+                          : "Configurar Campo"}
+                      </Button>
                     </div>
                     <Button
                       variant="ghost"
@@ -289,48 +268,63 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       <Dialog open={!!editingFieldId} onOpenChange={(open) => !open && setEditingFieldId(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Configurar Valores: {editingField?.label}</DialogTitle>
+            <DialogTitle>Configurar Campo: {editingField?.label}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-              {editingField?.options?.map((option, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <div className="flex-1 relative">
-                    <Input
-                      value={option}
-                      onChange={(e) => updateOption(editingField.id, index, e.target.value)}
-                      placeholder={`Valor ${index + 1}`}
-                      className="h-9 pr-12 focus-visible:ring-0"
-                      data-testid={`input-option-${editingField.id}-${index}`}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
-                      ID: {index + 1}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeOption(editingField.id, index)}
-                    className="h-9 w-9 text-destructive hover:bg-destructive/10"
-                    disabled={editingField.options!.length <= 1}
-                    data-testid={`button-remove-option-${editingField.id}-${index}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+          <div className="space-y-6 py-4">
+            <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg border">
+              <Checkbox 
+                id="edit-field-required" 
+                checked={editingField?.required}
+                onCheckedChange={() => editingField && toggleFieldRequired(editingField.id)}
+              />
+              <Label htmlFor="edit-field-required" className="text-sm font-medium cursor-pointer">
+                Campo obrigatório para abertura de tickets
+              </Label>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => addOption(editingFieldId!)}
-              className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
-              data-testid={`button-add-option-${editingFieldId}`}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Valor
-            </Button>
+
+            {(editingField?.type === "list" || editingField?.type === "dropdown") && (
+              <div className="space-y-4">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {editingField?.options?.map((option, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <div className="flex-1 relative">
+                        <Input
+                          value={option}
+                          onChange={(e) => updateOption(editingField.id, index, e.target.value)}
+                          placeholder={`Valor ${index + 1}`}
+                          className="h-9 pr-12 focus-visible:ring-0"
+                          data-testid={`input-option-${editingField.id}-${index}`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
+                          ID: {index + 1}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeOption(editingField.id, index)}
+                        className="h-9 w-9 text-destructive hover:bg-destructive/10"
+                        disabled={editingField.options!.length <= 1}
+                        data-testid={`button-remove-option-${editingField.id}-${index}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addOption(editingFieldId!)}
+                  className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
+                  data-testid={`button-add-option-${editingFieldId}`}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Valor
+                </Button>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" onClick={() => setEditingFieldId(null)}>Concluído</Button>
