@@ -407,13 +407,13 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                               <Label className="text-[10px] uppercase font-bold text-muted-foreground">Categoria</Label>
                               <Select 
                                 value={rule.field} 
-                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { field: val })}
+                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { field: val, value: "" })}
                               >
                                 <SelectTrigger className="h-9">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="field">Categoria</SelectItem>
+                                  <SelectItem value="field">Campo</SelectItem>
                                   <SelectItem value="status">Status do ticket</SelectItem>
                                   <SelectItem value="sla">SLA</SelectItem>
                                 </SelectContent>
@@ -454,12 +454,33 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                             {rule.field !== "sla" && (
                               <div className="space-y-1.5">
                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
-                                <Input 
-                                  value={rule.value}
-                                  onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
-                                  className="h-9"
-                                  placeholder="Digite o valor..."
-                                />
+                                {rule.field === "field" ? (
+                                  <Select
+                                    value={rule.value}
+                                    onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Selecione o campo..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {fields
+                                        .filter(f => f.id !== editingField.id)
+                                        .map(f => (
+                                          <SelectItem key={f.id} value={f.id}>
+                                            {f.label}
+                                          </SelectItem>
+                                        ))
+                                      }
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Input 
+                                    value={rule.value}
+                                    onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
+                                    className="h-9"
+                                    placeholder="Digite o valor..."
+                                  />
+                                )}
                               </div>
                             )}
                           </div>
