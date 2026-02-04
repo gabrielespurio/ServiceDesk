@@ -287,8 +287,8 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const editingField = fields.find(f => f.id === editingFieldId);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] relative overflow-hidden -mt-10">
-      <div className="flex justify-between items-center mb-4 shrink-0 bg-background/95 backdrop-blur z-10 py-2">
+    <div className="flex flex-col h-[calc(100vh-8rem)] relative overflow-visible -mt-10">
+      <div className="flex justify-between items-center mb-4 shrink-0 bg-background/95 backdrop-blur z-20 py-2">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-lg text-primary">
             <FileText className="h-5 w-5" />
@@ -339,8 +339,8 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
             <CardTitle className="text-xl">Campos do Formulário</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-col gap-4 p-4 bg-muted/30 rounded-lg border border-dashed">
-              <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-4 p-4 bg-muted/30 rounded-lg border border-dashed overflow-visible">
+              <div className="flex flex-col md:flex-row gap-4 overflow-visible">
                 <div className="flex-1 space-y-2">
                   <Label>Nome do Campo</Label>
                   <Input 
@@ -350,13 +350,13 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                     data-testid="input-new-field-label"
                   />
                 </div>
-                <div className="w-full md:w-48 space-y-2">
+                <div className="w-full md:w-48 space-y-2 overflow-visible">
                   <Label>Tipo do Campo</Label>
                   <Select value={newFieldType} onValueChange={setNewFieldType}>
                     <SelectTrigger data-testid="select-new-field-type">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[100]">
                       {FIELD_TYPES.map(type => (
                         <SelectItem key={type.id} value={type.id}>
                           <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
               <div className="flex flex-col md:flex-row items-center justify-end gap-4 pt-2">
                 <Button 
                   onClick={addField} 
-                  className="w-full md:w-auto"
+                  className="w-full md:w-auto hover-elevate active-elevate-2"
                   disabled={!newFieldLabel.trim()}
                   data-testid="button-add-field"
                 >
