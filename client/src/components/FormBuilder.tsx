@@ -210,38 +210,23 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
                       {(field.type === "dropdown" || field.type === "list") && (
                         <div className="space-y-3 pt-2">
-                          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções da Lista</Label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {field.options?.map((option, index) => (
-                              <div key={index} className="flex gap-2">
-                                <Input
-                                  value={option}
-                                  onChange={(e) => updateOption(field.id, index, e.target.value)}
-                                  placeholder={`Opção ${index + 1}`}
-                                  className="h-8 text-sm"
-                                  data-testid={`input-option-${field.id}-${index}`}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  onClick={() => removeOption(field.id, index)}
-                                  disabled={field.options!.length <= 1}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 border-dashed"
-                              onClick={() => addOption(field.id)}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Adicionar Opção
-                            </Button>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções (uma por linha)</Label>
+                            <span className="text-[10px] text-muted-foreground italic">Pressione Enter para novas opções</span>
                           </div>
+                          <Textarea
+                            value={field.options?.join("\n") || ""}
+                            onChange={(e) => {
+                              const newOptions = e.target.value.split("\n");
+                              setFields(fields.map(f => f.id === field.id ? { ...f, options: newOptions } : f));
+                            }}
+                            placeholder="Opção 1&#10;Opção 2&#10;Opção 3..."
+                            className="min-h-[100px] text-sm font-mono leading-relaxed"
+                            data-testid={`textarea-options-${field.id}`}
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Total de {field.options?.filter(o => o.trim()).length || 0} opções válidas.
+                          </p>
                         </div>
                       )}
                     </div>
