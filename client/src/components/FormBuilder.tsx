@@ -5,13 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Type, List, ChevronDown, AlignLeft, Settings2, Check, Hash, CheckSquare, Calendar, Layers, Calculator, GripVertical } from "lucide-react";
+import { Trash2, Plus, Type, List, AlignLeft, Settings2, Hash, CheckSquare, Calendar, Layers, Calculator, GripVertical, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -288,12 +287,27 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const editingField = fields.find(f => f.id === editingFieldId);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] relative overflow-hidden">
-      <div className="flex-1 overflow-y-auto pr-2 space-y-6 min-h-0">
-        <div className="flex justify-between items-center mb-4 shrink-0">
+    <div className="flex flex-col h-[calc(100vh-8rem)] relative overflow-hidden -mt-10">
+      <div className="flex justify-between items-center mb-4 shrink-0 bg-background/95 backdrop-blur z-10 py-2">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-primary/10 rounded-lg text-primary">
+            <FileText className="h-5 w-5" />
+          </div>
           <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel} data-testid="button-cancel">Cancelar</Button>
+          <Button 
+            onClick={() => onSave({ name: formName, description: formDescription, fields: JSON.stringify(fields) })} 
+            disabled={!formName}
+            data-testid="button-save-form"
+          >
+            Salvar Formulário
+          </Button>
+        </div>
+      </div>
 
+      <div className="flex-1 overflow-y-auto pr-2 space-y-6 min-h-0 pb-10">
         <Card className="border-none shadow-md">
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
@@ -402,17 +416,6 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
         </Card>
       </div>
 
-      <div className="flex justify-end gap-2 pt-6 mt-auto border-t bg-background shrink-0">
-        <Button variant="outline" onClick={onCancel} data-testid="button-cancel">Cancelar</Button>
-        <Button 
-          onClick={() => onSave({ name: formName, description: formDescription, fields: JSON.stringify(fields) })} 
-          disabled={!formName}
-          data-testid="button-save-form"
-        >
-          Salvar Formulário
-        </Button>
-      </div>
-
       <Dialog open={!!editingFieldId} onOpenChange={(open) => !open && setEditingFieldId(null)}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
@@ -463,9 +466,9 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                           <Input
                             value={option}
                             onChange={(e) => updateOption(editingField.id, index, e.target.value)}
-                            placeholder={`Valor ${index + 1}`}
+                            placeholder={`Valor \${index + 1}`}
                             className="h-9 pr-12 focus-visible:ring-0"
-                            data-testid={`input-option-${editingField.id}-${index}`}
+                            data-testid={`input-option-\${editingField.id}-\${index}`}
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
                             ID: {index + 1}
@@ -477,7 +480,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                           onClick={() => removeOption(editingField.id, index)}
                           className="h-9 w-9 text-destructive hover:bg-destructive/10"
                           disabled={editingField.options!.length <= 1}
-                          data-testid={`button-remove-option-${editingField.id}-${index}`}
+                          data-testid={`button-remove-option-\${editingField.id}-\${index}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -489,7 +492,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                     size="sm"
                     onClick={() => addOption(editingFieldId!)}
                     className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
-                    data-testid={`button-add-option-${editingFieldId}`}
+                    data-testid={`button-add-option-\${editingFieldId}`}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Valor
@@ -572,68 +575,77 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                                 </SelectContent>
                               </Select>
                             </div>
-                            {rule.field !== "sla" && (
-                              <div className="space-y-1.5">
-                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
-                                {rule.field === "field" ? (
-                                  <Select
-                                    value={rule.value}
-                                    onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Selecione o campo..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {fields
-                                        .filter(f => f.id !== editingField.id)
-                                        .map(f => (
-                                          <SelectItem key={f.id} value={f.id}>
-                                            {f.label}
-                                          </SelectItem>
-                                        ))
-                                      }
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Input 
-                                    value={rule.value}
-                                    onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
-                                    className="h-9"
-                                    placeholder="Digite o valor..."
-                                  />
-                                )}
-                              </div>
-                            )}
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
+                              {rule.field === "field" ? (
+                                <Select
+                                  value={rule.value}
+                                  onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fields
+                                      .filter(f => f.id !== editingField.id)
+                                      .map(f => (
+                                        <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : rule.field === "status" ? (
+                                <Select 
+                                  value={rule.value}
+                                  onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="aberto">Aberto</SelectItem>
+                                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                                    <SelectItem value="aguardando_usuario">Aguardando Usuário</SelectItem>
+                                    <SelectItem value="resolvido">Resolvido</SelectItem>
+                                    <SelectItem value="fechado">Fechado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input 
+                                  value={rule.value}
+                                  onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
+                                  placeholder="Valor..."
+                                  className="h-9"
+                                />
+                              )}
+                            </div>
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => removeVisibilityRule(editingField.id, index)}
                             className="h-9 w-9 text-destructive hover:bg-destructive/10 shrink-0"
+                            data-testid={`button-remove-rule-\${index}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full border-dashed"
-                      onClick={() => addVisibilityRule(editingField.id)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editingField && addVisibilityRule(editingField.id)}
+                      className="w-full h-9 border-dashed"
+                      data-testid="button-add-rule"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Adicionar outra condição
+                      Adicionar Nova Condição
                     </Button>
                   </div>
                 )}
               </div>
             </TabsContent>
           </Tabs>
-
-          <DialogFooter>
-            <Button type="button" onClick={() => setEditingFieldId(null)}>Concluído</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
