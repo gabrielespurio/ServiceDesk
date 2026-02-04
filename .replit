@@ -42,3 +42,6 @@ waitForPort = 5000
 
 [userenv.shared]
 EXTERNAL_DATABASE_URL = "postgresql://neondb_owner:npg_50xlzQdOFWvA@ep-delicate-star-ac7ht2d9-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+[agent]
+expertMode = true
