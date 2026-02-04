@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FormField {
   id: string;
@@ -267,66 +268,88 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       </div>
 
       <Dialog open={!!editingFieldId} onOpenChange={(open) => !open && setEditingFieldId(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Configurar Campo: {editingField?.label}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg border">
-              <Checkbox 
-                id="edit-field-required" 
-                checked={editingField?.required}
-                onCheckedChange={() => editingField && toggleFieldRequired(editingField.id)}
-              />
-              <Label htmlFor="edit-field-required" className="text-sm font-medium cursor-pointer">
-                Campo obrigatório para abertura de tickets
-              </Label>
-            </div>
 
-            {(editingField?.type === "list" || editingField?.type === "multi-select") && (
-              <div className="space-y-4">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                  {editingField?.options?.map((option, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <div className="flex-1 relative">
-                        <Input
-                          value={option}
-                          onChange={(e) => updateOption(editingField.id, index, e.target.value)}
-                          placeholder={`Valor ${index + 1}`}
-                          className="h-9 pr-12 focus-visible:ring-0"
-                          data-testid={`input-option-${editingField.id}-${index}`}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
-                          ID: {index + 1}
-                        </span>
+          <Tabs defaultValue="settings" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="settings">Configurações do campo</TabsTrigger>
+              <TabsTrigger value="visibility">Regras de visibilidade</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="settings" className="space-y-6 py-4">
+              <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg border">
+                <Checkbox 
+                  id="edit-field-required" 
+                  checked={editingField?.required}
+                  onCheckedChange={() => editingField && toggleFieldRequired(editingField.id)}
+                />
+                <Label htmlFor="edit-field-required" className="text-sm font-medium cursor-pointer">
+                  Campo obrigatório para abertura de tickets
+                </Label>
+              </div>
+
+              {(editingField?.type === "list" || editingField?.type === "multi-select") && (
+                <div className="space-y-4">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    {editingField?.options?.map((option, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <div className="flex-1 relative">
+                          <Input
+                            value={option}
+                            onChange={(e) => updateOption(editingField.id, index, e.target.value)}
+                            placeholder={`Valor ${index + 1}`}
+                            className="h-9 pr-12 focus-visible:ring-0"
+                            data-testid={`input-option-${editingField.id}-${index}`}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
+                            ID: {index + 1}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeOption(editingField.id, index)}
+                          className="h-9 w-9 text-destructive hover:bg-destructive/10"
+                          disabled={editingField.options!.length <= 1}
+                          data-testid={`button-remove-option-${editingField.id}-${index}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeOption(editingField.id, index)}
-                        className="h-9 w-9 text-destructive hover:bg-destructive/10"
-                        disabled={editingField.options!.length <= 1}
-                        data-testid={`button-remove-option-${editingField.id}-${index}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addOption(editingFieldId!)}
+                    className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
+                    data-testid={`button-add-option-${editingFieldId}`}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Valor
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addOption(editingFieldId!)}
-                  className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
-                  data-testid={`button-add-option-${editingFieldId}`}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Valor
+              )}
+            </TabsContent>
+
+            <TabsContent value="visibility" className="space-y-4 py-4">
+              <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                <Settings2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
+                <h3 className="font-medium">Regras de Visibilidade</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Defina condições para que este campo seja exibido no formulário.
+                </p>
+                <Button variant="outline" size="sm" className="mt-4" disabled>
+                  Adicionar Condição
                 </Button>
               </div>
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
+
           <DialogFooter>
             <Button type="button" onClick={() => setEditingFieldId(null)}>Concluído</Button>
           </DialogFooter>
