@@ -179,6 +179,7 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
     try {
+      console.log("Creating user with body:", req.body);
       const input = api.users.create.input.parse(req.body);
       const existingUser = await storage.getUserByUsername(input.username);
       if (existingUser) {
@@ -188,6 +189,7 @@ export async function registerRoutes(
       const user = await storage.createUser({ ...input, password: hashedPassword });
       res.status(201).json(user);
     } catch (err) {
+      console.error("Error creating user:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }

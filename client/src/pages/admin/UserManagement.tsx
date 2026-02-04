@@ -60,13 +60,17 @@ export default function UserManagement() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (editingUser) {
-        const res = await apiRequest("PATCH", buildUrl(api.users.update.path, { id: editingUser.id }), data);
-        return res.json();
-      } else {
-        const res = await apiRequest("POST", api.users.create.path, data);
-        return res.json();
+      const endpoint = editingUser 
+        ? buildUrl(api.users.update.path, { id: editingUser.id })
+        : api.users.create.path;
+      const method = editingUser ? "PATCH" : "POST";
+      
+      const res = await apiRequest(method, endpoint, data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao salvar usuário");
       }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
