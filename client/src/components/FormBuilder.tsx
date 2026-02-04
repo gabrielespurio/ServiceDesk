@@ -466,9 +466,9 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                           <Input
                             value={option}
                             onChange={(e) => updateOption(editingField.id, index, e.target.value)}
-                            placeholder={`Valor \${index + 1}`}
+                            placeholder={`Valor ${index + 1}`}
                             className="h-9 pr-12 focus-visible:ring-0"
-                            data-testid={`input-option-\${editingField.id}-\${index}`}
+                            data-testid={`input-option-${editingField.id}-${index}`}
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
                             ID: {index + 1}
@@ -480,7 +480,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                           onClick={() => removeOption(editingField.id, index)}
                           className="h-9 w-9 text-destructive hover:bg-destructive/10"
                           disabled={editingField.options!.length <= 1}
-                          data-testid={`button-remove-option-\${editingField.id}-\${index}`}
+                          data-testid={`button-remove-option-${editingField.id}-${index}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -492,13 +492,29 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                     size="sm"
                     onClick={() => addOption(editingFieldId!)}
                     className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
-                    data-testid={`button-add-option-\${editingFieldId}`}
+                    data-testid={`button-add-option-${editingFieldId}`}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Valor
                   </Button>
                 </div>
               )}
+
+              <div className="pt-4 border-t flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEditingFieldId(null)}
+                  data-testid="button-cancel-edit-field"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={() => setEditingFieldId(null)}
+                  data-testid="button-save-edit-field"
+                >
+                  Salvar Alterações
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="visibility" className="space-y-4 py-4">
