@@ -117,7 +117,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <Card className="border shadow-sm">
+        <Card className="border-none shadow-md">
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="form-name">Nome do Formulário</Label>
@@ -143,7 +143,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
           </CardContent>
         </Card>
 
-        <Card className="border shadow-sm">
+        <Card className="border-none shadow-md">
           <CardHeader>
             <CardTitle className="text-xl">Campos do Formulário</CardTitle>
           </CardHeader>
