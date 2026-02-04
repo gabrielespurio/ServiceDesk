@@ -85,7 +85,7 @@ function FormsSettings() {
   if (isBuilderOpen) {
     return (
       <FormBuilder
-        initialData={editingForm}
+        initialData={editingForm || undefined}
         onSave={(data) => createFormMutation.mutate(data)}
         onCancel={() => {
           setIsBuilderOpen(false);
@@ -160,9 +160,9 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Gerencie as configurações globais do sistema.</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-10rem)]">
         {/* Settings Navigation */}
-        <aside className="w-full md:w-64 shrink-0">
+        <aside className="w-full md:w-64 shrink-0 overflow-y-auto">
           <nav className="flex flex-col space-y-1">
             {SETTINGS_SECTIONS.map((section) => (
               <button
@@ -183,10 +183,10 @@ export default function SettingsPage() {
         </aside>
 
         {/* Settings Content */}
-        <main className="flex-1">
-          <Card className="border-none shadow-none bg-muted/30 min-h-[500px]">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-6">
+        <main className="flex-1 overflow-hidden">
+          <Card className="border-none shadow-none bg-muted/30 h-full">
+            <CardContent className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-2 mb-6 shrink-0">
                 {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.icon && (
                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
                     {(() => {
@@ -200,16 +200,18 @@ export default function SettingsPage() {
                 </h2>
               </div>
               
-              {activeSection === "forms" ? (
-                <FormsSettings />
-              ) : (
-                <div className="p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
-                  <p className="text-lg font-medium">Módulo em desenvolvimento</p>
-                  <p className="text-sm text-muted-foreground">
-                    A configuração de {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.label.toLowerCase()} estará disponível em breve.
-                  </p>
-                </div>
-              )}
+              <div className="flex-1 overflow-hidden">
+                {activeSection === "forms" ? (
+                  <FormsSettings />
+                ) : (
+                  <div className="h-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
+                    <p className="text-lg font-medium">Módulo em desenvolvimento</p>
+                    <p className="text-sm text-muted-foreground">
+                      A configuração de {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.label.toLowerCase()} estará disponível em breve.
+                    </p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </main>

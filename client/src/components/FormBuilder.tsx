@@ -288,22 +288,12 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const editingField = fields.find(f => f.id === editingFieldId);
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onCancel} data-testid="button-cancel">Cancelar</Button>
-          <Button 
-            onClick={() => onSave({ name: formName, description: formDescription, fields: JSON.stringify(fields) })} 
-            disabled={!formName}
-            data-testid="button-save-form"
-          >
-            Salvar Formulário
-          </Button>
+    <div className="flex flex-col h-[calc(100vh-14rem)] relative overflow-hidden">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-6 min-h-0">
+        <div className="flex justify-between items-center mb-4 shrink-0">
+          <h2 className="text-2xl font-bold">Construtor de Formulário</h2>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6">
         <Card className="border-none shadow-md">
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
@@ -410,6 +400,17 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-6 mt-auto border-t bg-background shrink-0">
+        <Button variant="outline" onClick={onCancel} data-testid="button-cancel">Cancelar</Button>
+        <Button 
+          onClick={() => onSave({ name: formName, description: formDescription, fields: JSON.stringify(fields) })} 
+          disabled={!formName}
+          data-testid="button-save-form"
+        >
+          Salvar Formulário
+        </Button>
       </div>
 
       <Dialog open={!!editingFieldId} onOpenChange={(open) => !open && setEditingFieldId(null)}>
