@@ -226,30 +226,35 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                               data-testid={`button-configure-options-${field.id}`}
                             >
                               <Settings2 className="h-3.5 w-3.5" />
-                              Configurar Opções ({field.options?.filter(o => o.trim()).length || 0})
+                              Configurar Valores ({field.options?.filter(o => o.trim()).length || 0})
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-md">
                             <DialogHeader>
-                              <DialogTitle>Configurar Opções: {field.label}</DialogTitle>
+                              <DialogTitle>Configurar Valores: {field.label}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opções da Lista</Label>
+                              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valores da Lista</Label>
                               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                                 {field.options?.map((option, index) => (
-                                  <div key={index} className="flex gap-2">
-                                    <Input
-                                      value={option}
-                                      onChange={(e) => updateOption(field.id, index, e.target.value)}
-                                      placeholder={`Opção ${index + 1}`}
-                                      className="h-9"
-                                      data-testid={`input-option-${field.id}-${index}`}
-                                    />
+                                  <div key={index} className="flex gap-2 items-center">
+                                    <div className="flex-1 relative">
+                                      <Input
+                                        value={option}
+                                        onChange={(e) => updateOption(field.id, index, e.target.value)}
+                                        placeholder={`Valor ${index + 1}`}
+                                        className="h-9 pr-12"
+                                        data-testid={`input-option-${field.id}-${index}`}
+                                      />
+                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border pointer-events-none">
+                                        ID: {index + 1}
+                                      </span>
+                                    </div>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => removeOption(field.id, index)}
-                                      className="h-9 w-9 text-destructive"
+                                      className="h-9 w-9 text-destructive hover:bg-destructive/10"
                                       disabled={field.options!.length <= 1}
                                       data-testid={`button-remove-option-${field.id}-${index}`}
                                     >
@@ -262,11 +267,11 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                                 variant="outline"
                                 size="sm"
                                 onClick={() => addOption(field.id)}
-                                className="w-full h-8 border-dashed"
+                                className="w-full h-9 border-dashed hover:border-primary hover:text-primary transition-colors"
                                 data-testid={`button-add-option-${field.id}`}
                               >
-                                <Plus className="h-3 w-3 mr-2" />
-                                Adicionar Opção
+                                <Plus className="h-4 w-4 mr-2" />
+                                Adicionar Valor
                               </Button>
                             </div>
                             <DialogFooter>
