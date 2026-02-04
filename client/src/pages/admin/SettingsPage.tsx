@@ -83,9 +83,15 @@ function FormsSettings() {
   if (isLoading) return <div>Carregando...</div>;
 
   if (isBuilderOpen) {
+    const builderData = editingForm ? {
+      name: editingForm.name,
+      description: editingForm.description || "",
+      fields: editingForm.fields,
+    } : undefined;
+
     return (
       <FormBuilder
-        initialData={editingForm || undefined}
+        initialData={builderData}
         onSave={(data) => createFormMutation.mutate(data)}
         onCancel={() => {
           setIsBuilderOpen(false);
