@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { z } from "zod";
@@ -28,13 +28,13 @@ export default function AuthPage() {
   const { login, register, isLoggingIn, isRegistering, user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in
-  if (user) {
-    if (user.role === 'admin') setLocation("/admin");
-    else if (user.role === 'resolver') setLocation("/dashboard");
-    else setLocation("/portal");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') setLocation("/admin");
+      else if (user.role === 'resolver') setLocation("/dashboard");
+      else setLocation("/portal");
+    }
+  }, [user, setLocation]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
