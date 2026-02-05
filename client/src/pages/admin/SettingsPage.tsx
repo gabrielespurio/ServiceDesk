@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import FormBuilder from "@/components/FormBuilder";
 import UserManagement from "./UserManagement";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const SETTINGS_SECTIONS = [
   { id: "forms", label: "Formulários", icon: FileText },
@@ -38,6 +39,176 @@ const SETTINGS_SECTIONS = [
   { id: "users", label: "Gerenciamento de usuários", icon: UserCog },
   { id: "templates", label: "Templates de respostas", icon: MessageSquare },
 ];
+
+function TeamsSettings() {
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<any>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+
+  const { data: teams, isLoading: isLoadingTeams } = useQuery<any[]>({
+    queryKey: [api.teams.list.path],
+  });
+
+  const { data: users, isLoading: isLoadingUsers } = useQuery<any[]>({
+    queryKey: [api.users.list.path],
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const method = editingTeam ? "PATCH" : "POST";
+      const url = editingTeam 
+        ? buildUrl(api.teams.update.path, { id: editingTeam.id })
+        : api.teams.create.path;
+      
+      const res = await apiRequest(method, url, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.teams.list.path] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({ title: "Sucesso", description: "Equipe salva com sucesso" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", buildUrl(api.teams.delete.path, { id }));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.teams.list.path] });
+      toast({ title: "Sucesso", description: "Equipe excluída com sucesso" });
+    },
+  });
+
+  const resetForm = () => {
+    setEditingTeam(null);
+    setName("");
+    setDescription("");
+    setSelectedUserIds([]);
+  };
+
+  const handleEdit = (team: any) => {
+    setEditingTeam(team);
+    setName(team.name);
+    setDescription(team.description || "");
+    setSelectedUserIds(team.members.map((m: any) => m.userId));
+    setIsDialogOpen(true);
+  };
+
+  const toggleUser = (userId: number) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
+  };
+
+  if (isLoadingTeams || isLoadingUsers) return <div>Carregando...</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium">Equipes</h3>
+          <p className="text-sm text-muted-foreground">Gerencie as equipes de atendimento.</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova Equipe
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingTeam ? "Editar Equipe" : "Nova Equipe"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome da Equipe</Label>
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Suporte N1" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Opcional" />
+              </div>
+              <div className="space-y-2">
+                <Label>Membros da Equipe</Label>
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                  {users?.map(user => (
+                    <div key={user.id} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`user-${user.id}`} 
+                        checked={selectedUserIds.includes(user.id)}
+                        onCheckedChange={() => toggleUser(user.id)}
+                      />
+                      <Label htmlFor={`user-${user.id}`} className="text-sm font-normal cursor-pointer">
+                        {user.fullName} ({user.username})
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button 
+                onClick={() => saveMutation.mutate({ name, description, memberUserIds: selectedUserIds })}
+                disabled={saveMutation.isPending || !name}
+              >
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid gap-4">
+        {teams?.map((team) => (
+          <Card key={team.id}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
+              <div className="space-y-1">
+                <CardTitle className="text-base">{team.name}</CardTitle>
+                <CardDescription>
+                  {team.description || "Sem descrição"} • {team.members.length} membros
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(team)}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-destructive"
+                  onClick={() => deleteMutation.mutate(team.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+        {teams?.length === 0 && (
+          <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+            Nenhuma equipe cadastrada.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function FormsSettings() {
   const { toast } = useToast();
@@ -212,6 +383,8 @@ export default function SettingsPage() {
                   <FormsSettings />
                 ) : activeSection === "users" ? (
                   <UserManagement />
+                ) : activeSection === "teams" ? (
+                  <TeamsSettings />
                 ) : (
                   <div className="h-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
                     <p className="text-lg font-medium">Módulo em desenvolvimento</p>

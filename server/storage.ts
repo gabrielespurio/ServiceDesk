@@ -27,6 +27,13 @@ export interface IStorage {
   createForm(form: InsertForm): Promise<Form>;
   deleteForm(id: number): Promise<boolean>;
 
+  // Teams
+  getTeams(): Promise<(Team & { members: (TeamMember & { user: User })[] })[]>;
+  getTeam(id: number): Promise<(Team & { members: (TeamMember & { user: User })[] }) | undefined>;
+  createTeam(team: InsertTeam, memberUserIds: number[]): Promise<Team>;
+  updateTeam(id: number, updates: Partial<InsertTeam>, memberUserIds?: number[]): Promise<Team | undefined>;
+  deleteTeam(id: number): Promise<boolean>;
+
   // Stats
   getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }>;
 }
@@ -148,6 +155,77 @@ export class DatabaseStorage implements IStorage {
   async deleteForm(id: number): Promise<boolean> {
     const result = await db.delete(forms).where(eq(forms.id, id)).returning();
     return result.length > 0;
+  }
+
+  async getTeams(): Promise<(Team & { members: (TeamMember & { user: User })[] })[]> {
+    const results = await db.query.teams.findMany({
+      with: {
+        members: {
+          with: {
+            user: true,
+          }
+        }
+      },
+      orderBy: [desc(teams.createdAt)],
+    });
+    return results as (Team & { members: (TeamMember & { user: User })[] })[];
+  }
+
+  async getTeam(id: number): Promise<(Team & { members: (TeamMember & { user: User })[] }) | undefined> {
+    const result = await db.query.teams.findFirst({
+      where: eq(teams.id, id),
+      with: {
+        members: {
+          with: {
+            user: true,
+          }
+        }
+      }
+    });
+    return result as (Team & { members: (TeamMember & { user: User })[] }) | undefined;
+  }
+
+  async createTeam(team: InsertTeam, memberUserIds: number[]): Promise<Team> {
+    return await db.transaction(async (tx) => {
+      const [newTeam] = await tx.insert(teams).values(team).returning();
+      if (memberUserIds.length > 0) {
+        await tx.insert(teamMembers).values(
+          memberUserIds.map((userId) => ({
+            teamId: newTeam.id,
+            userId,
+          }))
+        );
+      }
+      return newTeam;
+    });
+  }
+
+  async updateTeam(id: number, updates: Partial<InsertTeam>, memberUserIds?: number[]): Promise<Team | undefined> {
+    return await db.transaction(async (tx) => {
+      const [updatedTeam] = await tx.update(teams).set(updates).where(eq(teams.id, id)).returning();
+      if (!updatedTeam) return undefined;
+
+      if (memberUserIds !== undefined) {
+        await tx.delete(teamMembers).where(eq(teamMembers.teamId, id));
+        if (memberUserIds.length > 0) {
+          await tx.insert(teamMembers).values(
+            memberUserIds.map((userId) => ({
+              teamId: id,
+              userId,
+            }))
+          );
+        }
+      }
+      return updatedTeam;
+    });
+  }
+
+  async deleteTeam(id: number): Promise<boolean> {
+    return await db.transaction(async (tx) => {
+      await tx.delete(teamMembers).where(eq(teamMembers.teamId, id));
+      const [deleted] = await tx.delete(teams).where(eq(teams.id, id)).returning();
+      return !!deleted;
+    });
   }
 
   async getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }> {

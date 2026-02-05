@@ -263,6 +263,58 @@ export async function registerRoutes(
     res.json({ message: "Form deleted successfully" });
   });
 
+  // === TEAM ROUTES ===
+  app.get(api.teams.list.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const teams = await storage.getTeams();
+    res.json(teams);
+  });
+
+  app.post(api.teams.create.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const { memberUserIds, ...teamData } = api.teams.create.input.parse(req.body);
+      const team = await storage.createTeam(teamData, memberUserIds);
+      res.status(201).json(team);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch(api.teams.update.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const id = Number(req.params.id);
+      const { memberUserIds, ...teamData } = api.teams.update.input.parse(req.body);
+      const team = await storage.updateTeam(id, teamData, memberUserIds);
+      if (!team) return res.status(404).json({ message: "Team not found" });
+      res.json(team);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete(api.teams.delete.path, async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const success = await storage.deleteTeam(Number(req.params.id));
+    if (!success) return res.status(404).json({ message: "Team not found" });
+    res.json({ message: "Team deleted successfully" });
+  });
+
   // Seed Data if empty
   const users = await storage.getResolvers(); // Just a quick check
   if (users.length === 0) {

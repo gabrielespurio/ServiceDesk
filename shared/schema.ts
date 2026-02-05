@@ -53,16 +53,52 @@ export const formsRelations = relations(forms, ({ many }) => ({
   submissions: many(tickets), // Let's assume forms relate to tickets for now
 }));
 
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  userId: integer("user_id").notNull(),
+});
+
+export const teamsRelations = relations(teams, ({ many }) => ({
+  members: many(teamMembers),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMembers.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [teamMembers.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schemas
 export const insertFormSchema = createInsertSchema(forms).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, createdAt: true });
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({ id: true });
+
 export type Form = typeof forms.$inferSelect;
 export type InsertForm = z.infer<typeof insertFormSchema>;
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   ticketsCreated: many(tickets, { relationName: "creator" }),
   ticketsAssigned: many(tickets, { relationName: "assignee" }),
   messages: many(messages),
+  teams: many(teamMembers),
 }));
 
 export const ticketsRelations = relations(tickets, ({ one, many }) => ({

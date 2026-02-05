@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema } from './schema';
+import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema, insertTeamSchema, teams } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -174,6 +174,41 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/forms/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  teams: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/teams',
+      responses: {
+        200: z.array(z.custom<typeof teams.$inferSelect & { members: any[] }>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/teams',
+      input: insertTeamSchema.extend({ memberUserIds: z.array(z.number()) }),
+      responses: {
+        201: z.custom<typeof teams.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/teams/:id',
+      input: insertTeamSchema.partial().extend({ memberUserIds: z.array(z.number()).optional() }),
+      responses: {
+        200: z.custom<typeof teams.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/teams/:id',
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,
