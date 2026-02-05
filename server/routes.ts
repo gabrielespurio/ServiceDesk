@@ -187,6 +187,7 @@ export async function registerRoutes(
       }
       const hashedPassword = await bcrypt.hash(input.password, 10);
       const user = await storage.createUser({ ...input, password: hashedPassword });
+      console.log("User created successfully:", user);
       res.status(201).json(user);
     } catch (err) {
       console.error("Error creating user:", err);
