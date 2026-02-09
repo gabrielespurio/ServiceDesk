@@ -316,6 +316,49 @@ export async function registerRoutes(
     res.json({ message: "Team deleted successfully" });
   });
 
+  // === QUEUE ROUTES ===
+  app.get("/api/queues", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const queues = await storage.getServiceQueues();
+    res.json(queues);
+  });
+
+  app.post("/api/queues", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const queue = await storage.createServiceQueue(req.body);
+      res.status(201).json(queue);
+    } catch (err) {
+      res.status(500).json({ message: "Erro ao criar fila" });
+    }
+  });
+
+  app.patch("/api/queues/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const queue = await storage.updateServiceQueue(Number(req.params.id), req.body);
+      if (!queue) return res.status(404).json({ message: "Fila não encontrada" });
+      res.json(queue);
+    } catch (err) {
+      res.status(500).json({ message: "Erro ao atualizar fila" });
+    }
+  });
+
+  app.delete("/api/queues/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const success = await storage.deleteServiceQueue(Number(req.params.id));
+    if (!success) return res.status(404).json({ message: "Fila não encontrada" });
+    res.json({ message: "Fila excluída com sucesso" });
+  });
+
   // Seed Data if empty
   const users = await storage.getResolvers(); // Just a quick check
   if (users.length === 0) {
