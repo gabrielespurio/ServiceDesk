@@ -81,10 +81,33 @@ export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
   }),
 }));
 
+export const serviceQueues = pgTable("service_queues", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("team"), // 'team' or 'user'
+  teamId: integer("team_id"),
+  userId: integer("user_id"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const serviceQueuesRelations = relations(serviceQueues, ({ one }) => ({
+  team: one(teams, {
+    fields: [serviceQueues.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [serviceQueues.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schemas
 export const insertFormSchema = createInsertSchema(forms).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, createdAt: true });
 export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({ id: true });
+export const insertServiceQueueSchema = createInsertSchema(serviceQueues).omit({ id: true, createdAt: true });
 
 export type Form = typeof forms.$inferSelect;
 export type InsertForm = z.infer<typeof insertFormSchema>;
@@ -92,6 +115,8 @@ export type Team = typeof teams.$inferSelect;
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type ServiceQueue = typeof serviceQueues.$inferSelect;
+export type InsertServiceQueue = z.infer<typeof insertServiceQueueSchema>;
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

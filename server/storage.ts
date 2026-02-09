@@ -1,4 +1,4 @@
-import { users, tickets, messages, forms, teams, teamMembers, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember } from "@shared/schema";
+import { users, tickets, messages, forms, teams, teamMembers, serviceQueues, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember, type ServiceQueue, type InsertServiceQueue } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -34,8 +34,43 @@ export interface IStorage {
   updateTeam(id: number, updates: Partial<InsertTeam>, memberUserIds?: number[]): Promise<Team | undefined>;
   deleteTeam(id: number): Promise<boolean>;
 
+  // Service Queues
+  getServiceQueues(): Promise<(ServiceQueue & { team: Team | null; user: User | null })[]>;
+  createServiceQueue(queue: InsertServiceQueue): Promise<ServiceQueue>;
+  updateServiceQueue(id: number, updates: Partial<InsertServiceQueue>): Promise<ServiceQueue | undefined>;
+  deleteServiceQueue(id: number): Promise<boolean>;
+
   // Stats
   getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // ... existing methods
+  async getServiceQueues(): Promise<(ServiceQueue & { team: Team | null; user: User | null })[]> {
+    const results = await db.query.serviceQueues.findMany({
+      with: {
+        team: true,
+        user: true,
+      },
+      orderBy: [desc(serviceQueues.createdAt)],
+    });
+    return results as (ServiceQueue & { team: Team | null; user: User | null })[];
+  }
+
+  async createServiceQueue(queue: InsertServiceQueue): Promise<ServiceQueue> {
+    const [newQueue] = await db.insert(serviceQueues).values(queue).returning();
+    return newQueue;
+  }
+
+  async updateServiceQueue(id: number, updates: Partial<InsertServiceQueue>): Promise<ServiceQueue | undefined> {
+    const [updated] = await db.update(serviceQueues).set(updates).where(eq(serviceQueues.id, id)).returning();
+    return updated;
+  }
+
+  async deleteServiceQueue(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(serviceQueues).where(eq(serviceQueues.id, id)).returning();
+    return !!deleted;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
