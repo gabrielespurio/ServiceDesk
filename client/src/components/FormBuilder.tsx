@@ -147,10 +147,19 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
                   {/* Here we would ideally have another SortableContext for recursive DnD */}
                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-2">Campos desta Seção</p>
                   {field.fields.map((subField: FormField) => (
-                    <div key={subField.id} className="opacity-70 pointer-events-none scale-95 origin-left">
-                      <div className="flex items-center gap-2 p-2 border rounded bg-white">
-                        <Type className="h-3 w-3" />
-                        <span className="text-xs">{subField.label}</span>
+                    <div key={subField.id} className="scale-95 origin-left">
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-white">
+                        <Type className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs flex-1">{subField.label}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeField(subField.id)}
+                          data-testid={`button-remove-subfield-${subField.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   ))}
