@@ -1,12 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useTickets } from "@/hooks/use-tickets";
+import { useTickets, useUpdateTicket } from "@/hooks/use-tickets";
 import { useState } from "react";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -15,20 +12,18 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PriorityBadge } from "@/components/PriorityBadge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ListOrdered,
-  Users,
-  Ticket,
-  ChevronRight,
   Inbox,
   UserCheck,
   Loader2,
-  Shield
+  ChevronLeft,
+  ListOrdered
 } from "lucide-react";
 
 type QueueWithStats = {
@@ -45,6 +40,7 @@ type QueueWithStats = {
 export default function QueuesPage() {
   const { user } = useAuth();
   const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const { data: queues, isLoading } = useQuery<QueueWithStats[]>({
     queryKey: ["/api/queues/my-queues"],
@@ -59,6 +55,13 @@ export default function QueuesPage() {
   );
   const queueTickets = selectedQueueId ? (tickets || []) : [];
 
+  const updateTicket = useUpdateTicket();
+
+  const handleAssignToMe = (ticketId: number) => {
+    if (!user) return;
+    updateTicket.mutate({ id: ticketId, assignedToId: user.id, status: "em_andamento" });
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -67,140 +70,110 @@ export default function QueuesPage() {
     );
   }
 
-  const selectedQueue = queues?.find(q => q.id === selectedQueueId);
+  const selectedQueue = queues?.find((q) => q.id === selectedQueueId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6" data-testid="queues-page">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">
-            Filas de Atendimento
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie e visualize suas filas de atendimento
-          </p>
+    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-2rem)] -m-4 md:-m-8" data-testid="queues-page">
+      <div
+        className={`border-r bg-card flex flex-col shrink-0 transition-all duration-200 ${
+          sidebarCollapsed ? "w-0 overflow-hidden border-r-0" : "w-64"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2 p-4 border-b">
+          <h2 className="text-sm font-semibold text-foreground truncate">Filas</h2>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setSidebarCollapsed(true)}
+            data-testid="button-collapse-sidebar"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
         </div>
+
+        <ScrollArea className="flex-1">
+          <div className="py-1">
+            {!queues || queues.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                Nenhuma fila disponível.
+              </div>
+            ) : (
+              queues.map((queue) => (
+                <button
+                  key={queue.id}
+                  onClick={() => setSelectedQueueId(queue.id)}
+                  className={`w-full text-left px-4 py-2.5 flex items-center justify-between gap-2 text-sm transition-colors ${
+                    selectedQueueId === queue.id
+                      ? "bg-primary text-white font-medium"
+                      : "text-foreground hover-elevate"
+                  }`}
+                  data-testid={`button-queue-${queue.id}`}
+                >
+                  <span className="truncate">{queue.name}</span>
+                  <span
+                    className={`text-xs font-semibold tabular-nums shrink-0 ${
+                      selectedQueueId === queue.id
+                        ? "text-white"
+                        : "text-muted-foreground"
+                    }`}
+                    data-testid={`text-ticket-count-${queue.id}`}
+                  >
+                    {queue.ticketCount}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </ScrollArea>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : !queues || queues.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Inbox className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Nenhuma fila encontrada</h3>
-            <p className="text-muted-foreground text-sm">
-              Você não está atribuído a nenhuma fila de atendimento.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {queues.map((queue) => (
-            <Card
-              key={queue.id}
-              className={`cursor-pointer transition-all hover-elevate ${
-                selectedQueueId === queue.id
-                  ? "ring-2 ring-primary"
-                  : ""
-              }`}
-              onClick={() =>
-                setSelectedQueueId(
-                  selectedQueueId === queue.id ? null : queue.id
-                )
-              }
-              data-testid={`card-queue-${queue.id}`}
-            >
-              <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
-                <div className="space-y-1 min-w-0 flex-1">
-                  <CardTitle className="text-base font-semibold truncate" data-testid={`text-queue-name-${queue.id}`}>
-                    {queue.name}
-                  </CardTitle>
-                  {queue.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {queue.description}
-                    </p>
-                  )}
-                </div>
-                <Badge
-                  variant={queue.active ? "default" : "secondary"}
-                  className="shrink-0"
-                  data-testid={`badge-queue-status-${queue.id}`}
-                >
-                  {queue.active ? "Ativa" : "Inativa"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Ticket className="w-4 h-4" />
-                    <span data-testid={`text-ticket-count-${queue.id}`}>
-                      {queue.ticketCount} chamado{queue.ticketCount !== 1 ? "s" : ""} aberto{queue.ticketCount !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${selectedQueueId === queue.id ? "rotate-90" : ""}`} />
-                </div>
-
-                <div className="space-y-2">
-                  {queue.teams.length > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <div className="flex gap-1 flex-wrap">
-                        {queue.teams.map((team) => (
-                          <Badge key={team.id} variant="outline" className="text-xs" data-testid={`badge-team-${team.id}`}>
-                            {team.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {queue.users.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <div className="flex -space-x-2">
-                        {queue.users.slice(0, 5).map((u) => (
-                          <Avatar key={u.id} className="h-6 w-6 border-2 border-background">
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                              {u.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {queue.users.length > 5 && (
-                          <Avatar className="h-6 w-6 border-2 border-background">
-                            <AvatarFallback className="text-[10px] bg-muted text-muted-foreground font-bold">
-                              +{queue.users.length - 5}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {selectedQueueId && selectedQueue && (
-        <div className="space-y-4" data-testid="queue-tickets-section">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <ListOrdered className="w-5 h-5" />
-              Chamados - {selectedQueue.name}
-            </h2>
-            <Badge variant="secondary">
-              {queueTickets.length} chamado{queueTickets.length !== 1 ? "s" : ""}
-            </Badge>
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex items-center justify-between gap-2 p-4 border-b">
+          <div className="flex items-center gap-3 min-w-0">
+            {sidebarCollapsed && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setSidebarCollapsed(false)}
+                data-testid="button-expand-sidebar"
+              >
+                <ListOrdered className="w-4 h-4" />
+              </Button>
+            )}
+            <h1 className="text-lg font-semibold truncate" data-testid="text-page-title">
+              {selectedQueue ? selectedQueue.name : "Filas de Atendimento"}
+            </h1>
           </div>
+          {selectedQueue && (
+            <span className="text-sm text-muted-foreground shrink-0" data-testid="text-total-tickets">
+              {queueTickets.length} ticket{queueTickets.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+        <div className="flex-1 overflow-auto">
+          {!selectedQueue ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <Inbox className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-1" data-testid="text-empty-state">
+                Selecione uma fila
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Escolha uma fila de atendimento no painel à esquerda para visualizar os chamados.
+              </p>
+            </div>
+          ) : (
+            <div className="border-t-0">
               <Table>
-                <TableHeader className="bg-muted/50">
+                <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
                     <TableHead className="w-[80px]">ID</TableHead>
                     <TableHead>Assunto</TableHead>
@@ -226,17 +199,25 @@ export default function QueuesPage() {
                     </TableRow>
                   ) : (
                     queueTickets.map((ticket: any) => (
-                      <TableRow key={ticket.id} data-testid={`row-ticket-${ticket.id}`}>
-                        <TableCell className="font-mono text-xs">#{ticket.id}</TableCell>
-                        <TableCell>
-                          <Link href={`/portal/ticket/${ticket.id}`}>
-                            <span className="font-medium hover:underline cursor-pointer" data-testid={`link-ticket-${ticket.id}`}>
-                              {ticket.title}
-                            </span>
-                          </Link>
+                      <TableRow key={ticket.id} className="group hover:bg-muted/30" data-testid={`row-ticket-${ticket.id}`}>
+                        <TableCell className="font-mono text-xs font-medium text-muted-foreground">
+                          #{ticket.id}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {ticket.creator?.fullName || "—"}
+                        <TableCell>
+                          <Link href={`/portal/ticket/${ticket.id}`} className="font-medium hover:text-primary transition-colors block">
+                            {ticket.title}
+                          </Link>
+                          <span className="text-xs text-muted-foreground truncate max-w-[300px] block mt-0.5">
+                            {ticket.category}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
+                              {ticket.creator?.fullName?.[0] || "?"}
+                            </div>
+                            <span className="text-sm">{ticket.creator?.fullName || "—"}</span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={ticket.status} />
@@ -244,7 +225,7 @@ export default function QueuesPage() {
                         <TableCell>
                           <PriorityBadge priority={ticket.priority} />
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-muted-foreground text-sm">
                           {ticket.createdAt
                             ? formatDistanceToNow(new Date(ticket.createdAt), {
                                 addSuffix: true,
@@ -253,11 +234,23 @@ export default function QueuesPage() {
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Link href={`/portal/ticket/${ticket.id}`}>
-                            <Button variant="ghost" size="sm" data-testid={`button-view-ticket-${ticket.id}`}>
-                              Ver
+                          {!ticket.assignedToId ? (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Atribuir a mim"
+                              onClick={() => handleAssignToMe(ticket.id)}
+                              data-testid={`button-assign-ticket-${ticket.id}`}
+                            >
+                              <UserCheck className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                             </Button>
-                          </Link>
+                          ) : (
+                            <Link href={`/portal/ticket/${ticket.id}`}>
+                              <Button variant="ghost" size="sm" data-testid={`button-view-ticket-${ticket.id}`}>
+                                Ver
+                              </Button>
+                            </Link>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -265,9 +258,9 @@ export default function QueuesPage() {
                 </TableBody>
               </Table>
             </div>
-          </Card>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
