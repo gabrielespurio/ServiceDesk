@@ -200,14 +200,14 @@ export default function NewTicket() {
 
           {field.type === "list" && (
             <Select
-              value={(formValues[field.id] as string) || ""}
+              value={(formValues[field.id] as string) || undefined}
               onValueChange={(val) => updateValue(field.id, val)}
             >
               <SelectTrigger data-testid={`select-${field.id}`}>
                 <SelectValue placeholder={field.placeholder || "Selecione uma opção..."} />
               </SelectTrigger>
               <SelectContent>
-                {field.options?.map((opt, i) => (
+                {field.options?.filter(opt => opt.trim()).map((opt, i) => (
                   <SelectItem key={i} value={opt}>{opt}</SelectItem>
                 ))}
               </SelectContent>
