@@ -41,13 +41,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-interface VisibilityRule {
-  field: string;
+export interface VisibilityRule {
+  sourceFieldId: string;
   operator: string;
   value: string;
 }
 
-interface FormField {
+export interface FormField {
   id: string;
   type: string;
   label: string;
@@ -55,7 +55,7 @@ interface FormField {
   placeholder?: string;
   options?: string[];
   visibilityRules?: VisibilityRule[];
-  fields?: FormField[]; // Support for sections
+  fields?: FormField[];
 }
 
 interface FormBuilderProps {
@@ -196,6 +196,12 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
                 ? `Valores (${field.options?.filter((o: string) => o.trim()).length || 0})`
                 : "Configurações"}
             </Button>
+            {field.visibilityRules && field.visibilityRules.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-medium">
+                <Eye className="h-3 w-3" />
+                {field.visibilityRules.length} {field.visibilityRules.length === 1 ? "condição" : "condições"}
+              </span>
+            )}
           </div>
         </div>
 
@@ -411,38 +417,59 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
     setFields(recursiveUpdate(fields));
   };
 
-  const addVisibilityRule = (fieldId: string) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId) {
-        const newRule: VisibilityRule = {
-          field: "field",
-          operator: "equals",
-          value: ""
-        };
-        return { ...f, visibilityRules: [...(f.visibilityRules || []), newRule] };
+  const getAllSelectableFields = (items: FormField[], excludeId?: string): FormField[] => {
+    const result: FormField[] = [];
+    for (const item of items) {
+      if (item.id !== excludeId && ["list", "multi-select", "checkbox"].includes(item.type) && item.options && item.options.length > 0) {
+        result.push(item);
       }
-      return f;
-    }));
+      if (item.fields) {
+        result.push(...getAllSelectableFields(item.fields, excludeId));
+      }
+    }
+    return result;
+  };
+
+  const addVisibilityRule = (fieldId: string) => {
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId) {
+          const newRule: VisibilityRule = { sourceFieldId: "", operator: "equals", value: "" };
+          return { ...f, visibilityRules: [...(f.visibilityRules || []), newRule] };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const updateVisibilityRule = (fieldId: string, index: number, updates: Partial<VisibilityRule>) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId && f.visibilityRules) {
-        const newRules = [...f.visibilityRules];
-        newRules[index] = { ...newRules[index], ...updates };
-        return { ...f, visibilityRules: newRules };
-      }
-      return f;
-    }));
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId && f.visibilityRules) {
+          const newRules = [...f.visibilityRules];
+          newRules[index] = { ...newRules[index], ...updates };
+          return { ...f, visibilityRules: newRules };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const removeVisibilityRule = (fieldId: string, index: number) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId && f.visibilityRules) {
-        return { ...f, visibilityRules: f.visibilityRules.filter((_, i) => i !== index) };
-      }
-      return f;
-    }));
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId && f.visibilityRules) {
+          return { ...f, visibilityRules: f.visibilityRules.filter((_, i) => i !== index) };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const addOption = (fieldId: string) => {
@@ -791,146 +818,131 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
 
             <TabsContent value="visibility" className="space-y-4 py-4">
               <div className="space-y-4">
-                {(!editingField?.visibilityRules || editingField.visibilityRules.length === 0) ? (
-                  <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
-                    <Settings2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
-                    <h3 className="font-medium">Regras de Visibilidade</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Defina condições para que este campo seja exibido no formulário.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      onClick={() => editingField && addVisibilityRule(editingField.id)}
-                      data-testid="button-add-first-rule"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Condição
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      {editingField.visibilityRules.map((rule, index) => (
-                        <div key={index} className="flex gap-2 items-end bg-muted/20 p-3 rounded-lg border relative group">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                            <div className="space-y-1.5">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Categoria</Label>
-                              <Select
-                                value={rule.field}
-                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { field: val, value: "" })}
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="field">Campo</SelectItem>
-                                  <SelectItem value="status">Status do ticket</SelectItem>
-                                  <SelectItem value="sla">SLA</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Operador</Label>
-                              <Select
-                                value={rule.operator}
-                                onValueChange={(val) => updateVisibilityRule(editingField.id, index, { operator: val })}
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {rule.field === "field" && (
-                                    <>
+                {(() => {
+                  const selectableFields = getAllSelectableFields(fields, editingField?.id);
+                  return (!editingField?.visibilityRules || editingField.visibilityRules.length === 0) ? (
+                    <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+                      <Eye className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
+                      <h3 className="font-medium">Regras de Visibilidade</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Defina condições para que este campo seja exibido no formulário.
+                      </p>
+                      {selectableFields.length === 0 ? (
+                        <p className="text-xs text-muted-foreground mt-3 italic">
+                          Adicione campos do tipo Lista, Seleção múltipla ou Caixa de seleção ao formulário para criar condições.
+                        </p>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => editingField && addVisibilityRule(editingField.id)}
+                          data-testid="button-add-first-rule"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar Condição
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-xs text-muted-foreground">
+                        Este campo só será exibido quando <strong>todas</strong> as condições abaixo forem atendidas.
+                      </p>
+                      <div className="space-y-3">
+                        {editingField.visibilityRules.map((rule, index) => {
+                          const sourceField = selectableFields.find(f => f.id === rule.sourceFieldId);
+                          return (
+                            <div key={index} className="flex gap-2 items-end bg-muted/20 p-3 rounded-lg border relative group">
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <div className="space-y-1.5">
+                                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Quando o campo</Label>
+                                  <Select
+                                    value={rule.sourceFieldId}
+                                    onValueChange={(val) => updateVisibilityRule(editingField.id, index, { sourceFieldId: val, value: "" })}
+                                  >
+                                    <SelectTrigger className="h-9" data-testid={`select-rule-source-${index}`}>
+                                      <SelectValue placeholder="Selecione um campo..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {selectableFields.map(f => (
+                                        <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Operador</Label>
+                                  <Select
+                                    value={rule.operator}
+                                    onValueChange={(val) => updateVisibilityRule(editingField.id, index, { operator: val })}
+                                  >
+                                    <SelectTrigger className="h-9" data-testid={`select-rule-operator-${index}`}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
                                       <SelectItem value="equals">Igual a</SelectItem>
                                       <SelectItem value="not_equals">Diferente de</SelectItem>
                                       <SelectItem value="contains">Contém</SelectItem>
-                                    </>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
+                                  {sourceField && sourceField.options && sourceField.options.length > 0 ? (
+                                    <Select
+                                      value={rule.value}
+                                      onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
+                                    >
+                                      <SelectTrigger className="h-9" data-testid={`select-rule-value-${index}`}>
+                                        <SelectValue placeholder="Selecione o valor..." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {sourceField.options.filter(o => o.trim()).map((opt, i) => (
+                                          <SelectItem key={i} value={opt}>{opt}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <Input
+                                      value={rule.value}
+                                      onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
+                                      placeholder="Selecione um campo primeiro..."
+                                      className="h-9"
+                                      disabled={!rule.sourceFieldId}
+                                      data-testid={`input-rule-value-${index}`}
+                                    />
                                   )}
-                                  {rule.field === "status" && (
-                                    <>
-                                      <SelectItem value="equals">É</SelectItem>
-                                      <SelectItem value="not_equals">Não é</SelectItem>
-                                    </>
-                                  )}
-                                  {rule.field === "sla" && (
-                                    <>
-                                      <SelectItem value="overdue">Atrasado</SelectItem>
-                                      <SelectItem value="within">No prazo</SelectItem>
-                                    </>
-                                  )}
-                                </SelectContent>
-                              </Select>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeVisibilityRule(editingField.id, index)}
+                                className="h-9 w-9 text-destructive hover:bg-destructive/10 shrink-0"
+                                data-testid={`button-remove-rule-${index}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <div className="space-y-1.5">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor</Label>
-                              {rule.field === "field" ? (
-                                <Select
-                                  value={rule.value}
-                                  onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Selecione..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {fields
-                                      .filter(f => f.id !== editingField.id)
-                                      .map(f => (
-                                        <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : rule.field === "status" ? (
-                                <Select
-                                  value={rule.value}
-                                  onValueChange={(val) => updateVisibilityRule(editingField.id, index, { value: val })}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Selecione..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="aberto">Aberto</SelectItem>
-                                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                                    <SelectItem value="aguardando_usuario">Aguardando Usuário</SelectItem>
-                                    <SelectItem value="resolvido">Resolvido</SelectItem>
-                                    <SelectItem value="fechado">Fechado</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Input
-                                  value={rule.value}
-                                  onChange={(e) => updateVisibilityRule(editingField.id, index, { value: e.target.value })}
-                                  placeholder="Valor..."
-                                  className="h-9"
-                                />
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeVisibilityRule(editingField.id, index)}
-                            className="h-9 w-9 text-destructive hover:bg-destructive/10 shrink-0"
-                            data-testid={`button-remove-rule-\${index}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
+                      {selectableFields.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editingField && addVisibilityRule(editingField.id)}
+                          className="w-full h-9 border-dashed"
+                          data-testid="button-add-rule"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar Nova Condição
+                        </Button>
+                      )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => editingField && addVisibilityRule(editingField.id)}
-                      className="w-full h-9 border-dashed"
-                      data-testid="button-add-rule"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Nova Condição
-                    </Button>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </TabsContent>
           </Tabs>
@@ -953,18 +965,58 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   );
 }
 
+export function evaluateVisibility(
+  field: FormField,
+  formValues: Record<string, string | string[]>
+): boolean {
+  if (!field.visibilityRules || field.visibilityRules.length === 0) return true;
+  return field.visibilityRules.every(rule => {
+    if (!rule.sourceFieldId || !rule.value) return true;
+    const currentValue = formValues[rule.sourceFieldId];
+    if (currentValue === undefined || currentValue === "") return false;
+    const isArray = Array.isArray(currentValue);
+    switch (rule.operator) {
+      case "equals":
+        return isArray ? currentValue.includes(rule.value) : currentValue === rule.value;
+      case "not_equals":
+        return isArray ? !currentValue.includes(rule.value) : currentValue !== rule.value;
+      case "contains":
+        return isArray
+          ? currentValue.some(v => v.toLowerCase().includes(rule.value.toLowerCase()))
+          : currentValue.toLowerCase().includes(rule.value.toLowerCase());
+      default:
+        return true;
+    }
+  });
+}
+
 function FormPreview({ fields, formName, formDescription }: { fields: FormField[], formName: string, formDescription: string }) {
-  const renderFields = (fieldsToRender: FormField[], parentVisible: boolean = true) => {
+  const [formValues, setFormValues] = useState<Record<string, string | string[]>>({});
+
+  const updateValue = (fieldId: string, value: string | string[]) => {
+    setFormValues(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const toggleMultiValue = (fieldId: string, option: string) => {
+    setFormValues(prev => {
+      const current = (prev[fieldId] as string[]) || [];
+      const next = current.includes(option) ? current.filter(v => v !== option) : [...current, option];
+      return { ...prev, [fieldId]: next };
+    });
+  };
+
+  const renderFields = (fieldsToRender: FormField[]) => {
     return fieldsToRender.map((field) => {
-      const isVisible = parentVisible;
+      const isVisible = evaluateVisibility(field, formValues);
       if (!isVisible) return null;
 
       return (
         <React.Fragment key={field.id}>
           {field.type === "section" ? (
-            <React.Fragment>
-              {field.fields && renderFields(field.fields, isVisible)}
-            </React.Fragment>
+            <div className="space-y-4 pt-4">
+              <h3 className="text-base font-bold text-foreground border-b pb-2">{field.label}</h3>
+              {field.fields && renderFields(field.fields)}
+            </div>
           ) : (
             <div className="space-y-4 pt-4 border-t first:border-t-0 first:pt-0">
               <div className="space-y-2">
@@ -974,23 +1026,49 @@ function FormPreview({ fields, formName, formDescription }: { fields: FormField[
                 </Label>
 
                 {field.type === "text" && (
-                  <Input placeholder={field.placeholder || "Digite aqui..."} className="bg-muted/5 font-normal" />
+                  <Input
+                    placeholder={field.placeholder || "Digite aqui..."}
+                    className="bg-muted/5 font-normal"
+                    value={(formValues[field.id] as string) || ""}
+                    onChange={(e) => updateValue(field.id, e.target.value)}
+                  />
                 )}
 
                 {field.type === "textarea" && (
-                  <Textarea placeholder={field.placeholder || "Descreva detalhadamente..."} className="min-h-[100px] bg-muted/5 font-normal resize-none" />
+                  <Textarea
+                    placeholder={field.placeholder || "Descreva detalhadamente..."}
+                    className="min-h-[100px] bg-muted/5 font-normal resize-none"
+                    value={(formValues[field.id] as string) || ""}
+                    onChange={(e) => updateValue(field.id, e.target.value)}
+                  />
                 )}
 
                 {field.type === "number" && (
-                  <Input type="number" placeholder={field.placeholder || "0"} className="bg-muted/5 font-normal" />
+                  <Input
+                    type="number"
+                    placeholder={field.placeholder || "0"}
+                    className="bg-muted/5 font-normal"
+                    value={(formValues[field.id] as string) || ""}
+                    onChange={(e) => updateValue(field.id, e.target.value)}
+                  />
                 )}
 
                 {field.type === "decimal" && (
-                  <Input type="number" step="0.01" placeholder={field.placeholder || "0.00"} className="bg-muted/5 font-normal" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder={field.placeholder || "0.00"}
+                    className="bg-muted/5 font-normal"
+                    value={(formValues[field.id] as string) || ""}
+                    onChange={(e) => updateValue(field.id, e.target.value)}
+                  />
                 )}
 
                 {field.type === "list" && (
-                  <Select>
+                  <Select
+                    value={(formValues[field.id] as string) || ""}
+                    onValueChange={(val) => updateValue(field.id, val)}
+                  >
                     <SelectTrigger className="bg-muted/5 font-normal">
                       <SelectValue placeholder={field.placeholder || "Selecione uma opção..."} />
                     </SelectTrigger>
@@ -1008,8 +1086,12 @@ function FormPreview({ fields, formName, formDescription }: { fields: FormField[
                     <div className="grid grid-cols-2 gap-2">
                       {field.options?.map((opt, i) => (
                         <div key={i} className="flex items-center space-x-2">
-                          <Checkbox id={`preview-${field.id}-${i}`} />
-                          <label className="text-sm font-medium leading-none cursor-pointer">{opt}</label>
+                          <Checkbox
+                            id={`preview-${field.id}-${i}`}
+                            checked={((formValues[field.id] as string[]) || []).includes(opt)}
+                            onCheckedChange={() => toggleMultiValue(field.id, opt)}
+                          />
+                          <label htmlFor={`preview-${field.id}-${i}`} className="text-sm font-medium leading-none cursor-pointer">{opt}</label>
                         </div>
                       ))}
                     </div>
@@ -1022,8 +1104,12 @@ function FormPreview({ fields, formName, formDescription }: { fields: FormField[
                       <div className="grid grid-cols-1 gap-2 p-2">
                         {field.options.map((opt, i) => (
                           <div key={i} className="flex items-center space-x-2">
-                            <Checkbox id={`preview-check-${field.id}-${i}`} />
-                            <label className="text-sm font-medium leading-none cursor-pointer">{opt}</label>
+                            <Checkbox
+                              id={`preview-check-${field.id}-${i}`}
+                              checked={((formValues[field.id] as string[]) || []).includes(opt)}
+                              onCheckedChange={() => toggleMultiValue(field.id, opt)}
+                            />
+                            <label htmlFor={`preview-check-${field.id}-${i}`} className="text-sm font-medium leading-none cursor-pointer">{opt}</label>
                           </div>
                         ))}
                       </div>
