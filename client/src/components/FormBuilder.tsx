@@ -91,9 +91,10 @@ interface SortableFieldProps {
   updateFieldLabel: (id: string, label: string) => void;
   setEditingFieldId: (id: string) => void;
   removeField: (id: string) => void;
+  addFieldToSection?: (sectionId: string, fieldType: string) => void;
 }
 
-function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField }: SortableFieldProps) {
+function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField, addFieldToSection }: SortableFieldProps) {
   const {
     attributes,
     listeners,
@@ -164,10 +165,27 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-4">
-                  <Plus className="h-5 w-5 mb-2 opacity-20" />
-                  <p className="text-[10px] italic">Arraste campos para dentro desta seção</p>
+              ) : null}
+              {addFieldToSection && (
+                <div className="pt-2">
+                  <Select onValueChange={(val) => addFieldToSection(field.id, val)}>
+                    <SelectTrigger className="h-8 border-dashed text-xs text-muted-foreground" data-testid={`button-add-to-section-${field.id}`}>
+                      <div className="flex items-center gap-1.5">
+                        <Plus className="h-3 w-3" />
+                        <span>Adicionar campo à seção</span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FIELD_TYPES.map(ft => (
+                        <SelectItem key={ft.id} value={ft.id}>
+                          <div className="flex items-center gap-2">
+                            <ft.icon className="h-3 w-3" />
+                            <span>{ft.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -332,11 +350,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
         fields: fieldType === "section" ? [] : undefined,
       };
 
-      // Se soltou sobre uma SEÇÃO, adiciona dentro dela
-      const overField = fields.find(f => f.id === over.id);
-      if (overField?.type === "section") {
-        setFields(fields.map(f => f.id === over.id ? { ...f, fields: [...(f.fields || []), newField] } : f));
-      } else if (over.id === "form-drop-zone") {
+      if (over.id === "form-drop-zone") {
         setFields([...fields, newField]);
       } else {
         const overIndex = fields.findIndex((f) => f.id === over.id);
@@ -379,6 +393,27 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
     };
     setFields([...fields, newField]);
     if (type !== "section" && type !== "image" && type !== "attachment") {
+      setEditingFieldId(newField.id);
+    }
+  };
+
+  const addFieldToSection = (sectionId: string, fieldType: string) => {
+    const typeInfo = ALL_TYPES.find(t => t.id === fieldType);
+    const newField: FormField = {
+      id: `${fieldType}-${Date.now()}`,
+      type: fieldType,
+      label: `Novo ${typeInfo?.label || "Campo"}`,
+      required: false,
+      placeholder: "",
+      options: ["list", "multi-select", "checkbox"].includes(fieldType) ? ["Opção 1"] : undefined,
+    };
+    setFields(fields.map(f => {
+      if (f.id === sectionId) {
+        return { ...f, fields: [...(f.fields || []), newField] };
+      }
+      return f;
+    }));
+    if (fieldType !== "image" && fieldType !== "attachment") {
       setEditingFieldId(newField.id);
     }
   };
@@ -610,6 +645,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
                             updateFieldLabel={updateFieldLabel}
                             setEditingFieldId={setEditingFieldId}
                             removeField={removeField}
+                            addFieldToSection={addFieldToSection}
                           />
                         ))}
                       </div>
