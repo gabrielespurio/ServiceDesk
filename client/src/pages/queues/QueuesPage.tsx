@@ -3,7 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useTickets, useUpdateTicket } from "@/hooks/use-tickets";
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -61,6 +61,7 @@ export default function QueuesPage() {
   const displayTickets = isMyQueue ? (myTickets || []) : selectedQueueId ? (tickets || []) : [];
   const ticketsLoading = isMyQueue ? isLoadingMyTickets : isLoadingTickets;
 
+  const [, navigate] = useLocation();
   const updateTicket = useUpdateTicket();
 
   const handleAssignToMe = (ticketId: number) => {
@@ -218,14 +219,19 @@ export default function QueuesPage() {
                           </TableRow>
                         ) : (
                           displayTickets.map((ticket: any) => (
-                            <TableRow key={ticket.id} className="group hover:bg-muted/30" data-testid={`row-ticket-${ticket.id}`}>
+                            <TableRow
+                              key={ticket.id}
+                              className="group hover:bg-muted/30 cursor-pointer"
+                              onClick={() => navigate(`/portal/ticket/${ticket.id}`)}
+                              data-testid={`row-ticket-${ticket.id}`}
+                            >
                               <TableCell className="font-mono text-xs font-medium text-muted-foreground">
                                 #{ticket.id}
                               </TableCell>
                               <TableCell>
-                                <Link href={`/portal/ticket/${ticket.id}`} className="font-medium hover:text-primary transition-colors block">
+                                <span className="font-medium text-foreground group-hover:text-primary transition-colors block">
                                   {ticket.title}
-                                </Link>
+                                </span>
                                 <span className="text-xs text-muted-foreground truncate max-w-[300px] block mt-0.5">
                                   {ticket.category}
                                 </span>
@@ -253,22 +259,16 @@ export default function QueuesPage() {
                                   : "—"}
                               </TableCell>
                               <TableCell className="text-right">
-                                {!ticket.assignedToId ? (
+                                {!ticket.assignedToId && (
                                   <Button
                                     size="icon"
                                     variant="ghost"
                                     title="Atribuir a mim"
-                                    onClick={() => handleAssignToMe(ticket.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleAssignToMe(ticket.id); }}
                                     data-testid={`button-assign-ticket-${ticket.id}`}
                                   >
                                     <UserCheck className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                                   </Button>
-                                ) : (
-                                  <Link href={`/portal/ticket/${ticket.id}`}>
-                                    <Button variant="ghost" size="sm" data-testid={`button-view-ticket-${ticket.id}`}>
-                                      Ver
-                                    </Button>
-                                  </Link>
                                 )}
                               </TableCell>
                             </TableRow>
