@@ -52,8 +52,8 @@ export default function QueuesPage() {
   const isMyQueue = selectedView?.type === "my-queue";
   const selectedQueueId = selectedView?.type === "queue" ? selectedView.id : null;
 
-  const myTicketsFilters = isMyQueue ? { assignedToMe: "true" } : undefined;
-  const { data: myTickets, isLoading: isLoadingMyTickets } = useTickets(myTicketsFilters);
+  const { data: myTickets, isLoading: isLoadingMyTickets } = useTickets({ assignedToMe: "true" });
+  const myTicketCount = myTickets?.length ?? 0;
 
   const queueTicketsFilters = selectedQueueId ? { queueId: selectedQueueId } : { queueId: -1 };
   const { data: tickets, isLoading: isLoadingTickets } = useTickets(queueTicketsFilters);
@@ -108,6 +108,16 @@ export default function QueuesPage() {
               >
                 <span className={`flex-1 text-left truncate text-[15px] ${isMyQueue ? "font-semibold" : "font-medium"}`}>
                   Minha Fila
+                </span>
+                <span
+                  className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${
+                    isMyQueue
+                      ? "bg-white/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                  data-testid="text-my-queue-count"
+                >
+                  {myTicketCount}
                 </span>
               </button>
 
