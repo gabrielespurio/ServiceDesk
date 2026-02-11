@@ -24,6 +24,7 @@ export interface IStorage {
 
   // Forms
   getForms(): Promise<Form[]>;
+  getActiveForms(): Promise<Form[]>;
   createForm(form: InsertForm): Promise<Form>;
   deleteForm(id: number): Promise<boolean>;
 
@@ -144,6 +145,10 @@ export class DatabaseStorage implements IStorage {
 
   async getForms(): Promise<Form[]> {
     return db.select().from(forms).orderBy(desc(forms.createdAt));
+  }
+
+  async getActiveForms(): Promise<Form[]> {
+    return db.select().from(forms).where(eq(forms.active, true)).orderBy(forms.name);
   }
 
   async createForm(form: InsertForm): Promise<Form> {

@@ -46,9 +46,17 @@ Preferred communication style: Simple, everyday language.
 - **API Contract**: Centralized API definitions in `shared/routes.ts` with Zod schemas for validation
 - **Component Architecture**: Atomic design with reusable UI components in `components/ui/`
 
+### Dynamic Forms System
+- **Form Builder**: Admin creates forms in Settings > Formulários with drag-and-drop fields
+- **Field Types**: text, textarea, number, decimal, list, multi-select, checkbox, date, image, attachment, section
+- **Visibility Rules**: Conditional field visibility based on other field values (sourceFieldId/operator/value with AND logic)
+- **Area-Form Binding**: Form name = Area name; when user creates a ticket, they select an "Área" which loads the corresponding form
+- **Custom Fields Storage**: Dynamic form values stored as JSON in tickets.customFields column
+- **evaluateVisibility()**: Exported from FormBuilder for reuse across form rendering contexts
+
 ### Database Schema
 - **Users**: id, username, password (hashed), fullName, role (enum), email, createdAt
-- **Tickets**: id, title, description, status (enum), priority (enum), category, creatorId, assignedToId, timestamps
+- **Tickets**: id, title, description, status (enum), priority (enum), category, creatorId, assignedToId, customFields (JSON text), timestamps
 - **Messages**: id, ticketId, userId, content, isInternal (for agent-only notes), createdAt
 
 ### Status and Priority Enums

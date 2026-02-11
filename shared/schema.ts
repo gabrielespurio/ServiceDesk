@@ -23,10 +23,11 @@ export const tickets = pgTable("tickets", {
   description: text("description").notNull(),
   status: ticketStatusEnum("status").default("aberto").notNull(),
   priority: ticketPriorityEnum("priority").default("media").notNull(),
-  category: text("category").notNull(), // e.g., Hardware, Software, Access
+  category: text("category").notNull(),
   creatorId: integer("creator_id").notNull(),
   assignedToId: integer("assigned_to_id"),
   queueId: integer("queue_id"),
+  customFields: text("custom_fields"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

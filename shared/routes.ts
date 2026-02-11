@@ -163,6 +163,13 @@ export const api = {
         200: z.array(z.custom<typeof forms.$inferSelect>()),
       },
     },
+    listActive: {
+      method: 'GET' as const,
+      path: '/api/forms/active',
+      responses: {
+        200: z.array(z.custom<typeof forms.$inferSelect>()),
+      },
+    },
     create: {
       method: 'POST' as const,
       path: '/api/forms',

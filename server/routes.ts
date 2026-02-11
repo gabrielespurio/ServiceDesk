@@ -237,6 +237,12 @@ export async function registerRoutes(
   });
 
   // === FORM ROUTES ===
+  app.get(api.forms.listActive.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const activeForms = await storage.getActiveForms();
+    res.json(activeForms);
+  });
+
   app.get(api.forms.list.path, async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(403).json({ message: "Forbidden" });

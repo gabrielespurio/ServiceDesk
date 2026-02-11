@@ -224,6 +224,31 @@ export default function TicketDetail() {
                </div>
              </CardContent>
            </Card>
+
+           {ticket.customFields && (() => {
+             try {
+               const fields = JSON.parse(ticket.customFields as string) as Record<string, { label: string; value: string | string[]; type: string }>;
+               const entries = Object.entries(fields);
+               if (entries.length === 0) return null;
+               return (
+                 <Card className="border-border/50 shadow-sm">
+                   <CardHeader>
+                     <CardTitle className="text-sm font-medium">Campos Adicionais</CardTitle>
+                   </CardHeader>
+                   <CardContent className="space-y-3">
+                     {entries.map(([id, field]) => (
+                       <div key={id} className="flex flex-col gap-1">
+                         <span className="text-xs text-muted-foreground">{field.label}</span>
+                         <span className="text-sm font-medium" data-testid={`custom-field-${id}`}>
+                           {Array.isArray(field.value) ? field.value.join(", ") : field.value}
+                         </span>
+                       </div>
+                     ))}
+                   </CardContent>
+                 </Card>
+               );
+             } catch { return null; }
+           })()}
         </div>
       </div>
     </div>
