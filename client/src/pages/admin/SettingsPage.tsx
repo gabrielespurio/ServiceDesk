@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   FileText,
@@ -15,7 +15,11 @@ import {
   Trash2,
   Settings,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Search,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Pencil,
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
@@ -30,6 +34,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import FormBuilder from "@/components/FormBuilder";
 import UserManagement from "./UserManagement";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const ITEMS_PER_PAGE = 10;
 
 const SETTINGS_SECTIONS = [
   { id: "forms", label: "Formulários", icon: FileText },
@@ -113,13 +127,29 @@ function TeamsSettings() {
     );
   };
 
-  if (isLoadingTeams || isLoadingUsers) return <div>Carregando...</div>;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const filteredTeams = useMemo(() => {
+    if (!teams) return [];
+    if (!searchTerm) return teams;
+    const lower = searchTerm.toLowerCase();
+    return teams.filter((t: any) =>
+      t.name.toLowerCase().includes(lower) ||
+      (t.description || "").toLowerCase().includes(lower)
+    );
+  }, [teams, searchTerm]);
+
+  const totalPages = Math.ceil(filteredTeams.length / ITEMS_PER_PAGE);
+  const paginatedTeams = filteredTeams.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  if (isLoadingTeams || isLoadingUsers) return <div className="flex items-center justify-center py-12 text-muted-foreground">Carregando...</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h3 className="text-lg font-medium">Equipes</h3>
+          <h3 className="text-lg font-semibold">Equipes</h3>
           <p className="text-sm text-muted-foreground">Gerencie as equipes de atendimento.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -127,7 +157,7 @@ function TeamsSettings() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" data-testid="button-new-team">
               <Plus className="h-4 w-4" />
               Nova Equipe
             </Button>
@@ -142,111 +172,104 @@ function TeamsSettings() {
               </p>
             </DialogHeader>
             <div className="px-6 py-5 space-y-5">
-              {/* Nome da Equipe */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nome da Equipe</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Ex: Suporte N1"
-                  className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                />
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Suporte N1" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-team-name" />
               </div>
-
-              {/* Descrição */}
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-                  Descrição <span className="text-gray-400 font-normal">(opcional)</span>
-                </Label>
-                <Input
-                  id="description"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Breve descrição da equipe"
-                  className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                />
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700">Descrição <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                <Input id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Breve descrição da equipe" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-team-description" />
               </div>
-
-              {/* Membros da Equipe */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Membros da Equipe</Label>
                 <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2 bg-gray-50/50">
-                  {users?.length === 0 && (
-                    <p className="text-sm text-gray-400 text-center py-2">Nenhum usuário disponível</p>
-                  )}
+                  {users?.length === 0 && <p className="text-sm text-gray-400 text-center py-2">Nenhum usuário disponível</p>}
                   {users?.map(user => (
                     <div key={user.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-white transition-colors">
-                      <Checkbox
-                        id={`user-${user.id}`}
-                        checked={selectedUserIds.includes(user.id)}
-                        onCheckedChange={() => toggleUser(user.id)}
-                        className="border-gray-300"
-                      />
-                      <Label htmlFor={`user-${user.id}`} className="text-sm font-normal cursor-pointer text-gray-700 flex-1">
-                        {user.fullName} <span className="text-gray-400">({user.username})</span>
-                      </Label>
+                      <Checkbox id={`user-${user.id}`} checked={selectedUserIds.includes(user.id)} onCheckedChange={() => toggleUser(user.id)} className="border-gray-300" data-testid={`checkbox-team-member-${user.id}`} />
+                      <Label htmlFor={`user-${user.id}`} className="text-sm font-normal cursor-pointer text-gray-700 flex-1">{user.fullName} <span className="text-gray-400">({user.username})</span></Label>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-
-            {/* Footer com botões */}
             <DialogFooter className="px-6 py-4 border-t border-gray-100 flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                className="flex-1 h-11 rounded-lg border-gray-200"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => saveMutation.mutate({ name, description, memberUserIds: selectedUserIds })}
-                disabled={saveMutation.isPending || !name}
-                className="flex-1 h-11 rounded-lg"
-              >
-                {saveMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1 h-11 rounded-lg border-gray-200" data-testid="button-cancel-team">Cancelar</Button>
+              <Button onClick={() => saveMutation.mutate({ name, description, memberUserIds: selectedUserIds })} disabled={saveMutation.isPending || !name} className="flex-1 h-11 rounded-lg" data-testid="button-save-team">{saveMutation.isPending ? "Salvando..." : "Salvar"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {teams?.map((team) => (
-          <Card key={team.id} className="border-none shadow-sm bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-              <div className="space-y-1">
-                <CardTitle className="text-base">{team.name}</CardTitle>
-                <CardDescription>
-                  {team.description || "Sem descrição"} • {team.members.length} membros
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(team)}>
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => deleteMutation.mutate(team.id)}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-        {teams?.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-            Nenhuma equipe cadastrada.
-          </div>
-        )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Pesquisar equipes..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="pl-10"
+          data-testid="input-search-teams"
+        />
       </div>
+
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="text-center">Membros</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedTeams.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  {searchTerm ? "Nenhuma equipe encontrada." : "Nenhuma equipe cadastrada."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedTeams.map((team: any) => (
+                <TableRow key={team.id} data-testid={`row-team-${team.id}`}>
+                  <TableCell className="font-medium">{team.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{team.description || "—"}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary">{team.members.length}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(team)} data-testid={`button-edit-team-${team.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMutation.mutate(team.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-team-${team.id}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredTeams.length)} de {filteredTeams.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} data-testid="button-prev-teams">
+              <ChevronLeftIcon className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-3">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="icon" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} data-testid="button-next-teams">
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -355,13 +378,29 @@ function QueuesSettings() {
     );
   };
 
-  if (isLoadingQueues || isLoadingTeams || isLoadingUsers) return <div>Carregando...</div>;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const filteredQueues = useMemo(() => {
+    if (!queues) return [];
+    if (!searchTerm) return queues;
+    const lower = searchTerm.toLowerCase();
+    return queues.filter((q: any) =>
+      q.name.toLowerCase().includes(lower) ||
+      (q.description || "").toLowerCase().includes(lower)
+    );
+  }, [queues, searchTerm]);
+
+  const totalPages = Math.ceil(filteredQueues.length / ITEMS_PER_PAGE);
+  const paginatedQueues = filteredQueues.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  if (isLoadingQueues || isLoadingTeams || isLoadingUsers) return <div className="flex items-center justify-center py-12 text-muted-foreground">Carregando...</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h3 className="text-lg font-medium">Filas de Atendimento</h3>
+          <h3 className="text-lg font-semibold">Filas de Atendimento</h3>
           <p className="text-sm text-muted-foreground">Gerencie as filas e defina quem terá acesso a cada uma.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -369,7 +408,7 @@ function QueuesSettings() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" data-testid="button-new-queue">
               <Plus className="h-4 w-4" />
               Nova Fila
             </Button>
@@ -379,81 +418,43 @@ function QueuesSettings() {
               <DialogTitle className="text-xl font-semibold text-gray-900">
                 {editingQueue ? "Editar Fila" : "Nova Fila"}
               </DialogTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                Preencha os dados da fila e defina quem terá acesso.
-              </p>
+              <p className="text-sm text-gray-500 mt-1">Preencha os dados da fila e defina quem terá acesso.</p>
             </DialogHeader>
             <div className="px-6 py-5 space-y-5">
-              {/* Nome da Fila */}
               <div className="space-y-2">
                 <Label htmlFor="queue-name" className="text-sm font-medium text-gray-700">Nome da Fila</Label>
-                <Input
-                  id="queue-name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Ex: Suporte Técnico N1"
-                  className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                />
+                <Input id="queue-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Suporte Técnico N1" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-queue-name" />
               </div>
-
-              {/* Descrição */}
               <div className="space-y-2">
-                <Label htmlFor="queue-description" className="text-sm font-medium text-gray-700">
-                  Descrição <span className="text-gray-400 font-normal">(opcional)</span>
-                </Label>
-                <Input
-                  id="queue-description"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Breve descrição da fila"
-                  className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                />
+                <Label htmlFor="queue-description" className="text-sm font-medium text-gray-700">Descrição <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                <Input id="queue-description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Breve descrição da fila" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-queue-description" />
               </div>
-
-              {/* Seleção de Equipes e Usuários */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Coluna Equipes */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Equipes</Label>
                   <div className="border border-gray-200 rounded-lg p-3 h-[200px] overflow-y-auto space-y-2 bg-gray-50/50">
                     {teams?.map(team => (
                       <div key={team.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`qteam-${team.id}`}
-                          checked={selectedTeamIds.includes(team.id)}
-                          onCheckedChange={() => toggleTeam(team.id)}
-                        />
-                        <Label htmlFor={`qteam-${team.id}`} className="text-xs font-normal cursor-pointer flex-1 truncate">
-                          {team.name}
-                        </Label>
+                        <Checkbox id={`qteam-${team.id}`} checked={selectedTeamIds.includes(team.id)} onCheckedChange={() => toggleTeam(team.id)} />
+                        <Label htmlFor={`qteam-${team.id}`} className="text-xs font-normal cursor-pointer flex-1 truncate">{team.name}</Label>
                       </div>
                     ))}
                     {teams?.length === 0 && <p className="text-xs text-gray-400">Nenhuma equipe</p>}
                   </div>
                 </div>
-
-                {/* Coluna Usuários */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Usuários</Label>
                   <div className="border border-gray-200 rounded-lg p-3 h-[200px] overflow-y-auto space-y-2 bg-gray-50/50">
                     {users?.map(user => (
                       <div key={user.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`quser-${user.id}`}
-                          checked={selectedUserIds.includes(user.id)}
-                          onCheckedChange={() => toggleUser(user.id)}
-                        />
-                        <Label htmlFor={`quser-${user.id}`} className="text-xs font-normal cursor-pointer flex-1 truncate">
-                          {user.fullName}
-                        </Label>
+                        <Checkbox id={`quser-${user.id}`} checked={selectedUserIds.includes(user.id)} onCheckedChange={() => toggleUser(user.id)} />
+                        <Label htmlFor={`quser-${user.id}`} className="text-xs font-normal cursor-pointer flex-1 truncate">{user.fullName}</Label>
                       </div>
                     ))}
                     {users?.length === 0 && <p className="text-xs text-gray-400">Nenhum usuário</p>}
                   </div>
                 </div>
               </div>
-
-              {/* Resumo de Seleção */}
               {(selectedTeamIds.length > 0 || selectedUserIds.length > 0) && (
                 <div className="space-y-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
                   <Label className="text-xs font-semibold text-primary uppercase tracking-wider">Acesso concedido a:</Label>
@@ -463,9 +464,7 @@ function QueuesSettings() {
                       return team ? (
                         <Badge key={`bteam-${id}`} variant="secondary" className="bg-white text-gray-700 border-gray-200 pr-1 py-0.5">
                           {team.name}
-                          <button onClick={() => toggleTeam(id)} className="ml-1 hover:text-destructive">
-                            <X className="h-3 w-3" />
-                          </button>
+                          <button onClick={() => toggleTeam(id)} className="ml-1 hover:text-destructive"><X className="h-3 w-3" /></button>
                         </Badge>
                       ) : null;
                     })}
@@ -474,9 +473,7 @@ function QueuesSettings() {
                       return user ? (
                         <Badge key={`buser-${id}`} variant="secondary" className="bg-white text-gray-700 border-gray-200 pr-1 py-0.5">
                           {user.fullName}
-                          <button onClick={() => toggleUser(id)} className="ml-1 hover:text-destructive">
-                            <X className="h-3 w-3" />
-                          </button>
+                          <button onClick={() => toggleUser(id)} className="ml-1 hover:text-destructive"><X className="h-3 w-3" /></button>
                         </Badge>
                       ) : null;
                     })}
@@ -484,62 +481,81 @@ function QueuesSettings() {
                 </div>
               )}
             </div>
-
-            {/* Footer com botões */}
             <DialogFooter className="px-6 py-4 border-t border-gray-100 flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                className="flex-1 h-11 rounded-lg border-gray-200"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saveMutation.isPending || !name || (selectedTeamIds.length === 0 && selectedUserIds.length === 0)}
-                className="flex-1 h-11 rounded-lg"
-              >
-                {saveMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1 h-11 rounded-lg border-gray-200" data-testid="button-cancel-queue">Cancelar</Button>
+              <Button onClick={handleSave} disabled={saveMutation.isPending || !name || (selectedTeamIds.length === 0 && selectedUserIds.length === 0)} className="flex-1 h-11 rounded-lg" data-testid="button-save-queue">{saveMutation.isPending ? "Salvando..." : "Salvar"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {queues?.map((queue) => (
-          <Card key={queue.id} className="border-none shadow-sm bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-              <div className="space-y-1">
-                <CardTitle className="text-base">{queue.name}</CardTitle>
-                <CardDescription>
-                  {queue.description || "Sem descrição"} • {getAssignmentLabel(queue)}
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(queue)}>
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => deleteMutation.mutate(queue.id)}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-        {queues?.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-            Nenhuma fila cadastrada.
-          </div>
-        )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Pesquisar filas..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="pl-10"
+          data-testid="input-search-queues"
+        />
       </div>
+
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Atribuição</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedQueues.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  {searchTerm ? "Nenhuma fila encontrada." : "Nenhuma fila cadastrada."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedQueues.map((queue: any) => (
+                <TableRow key={queue.id} data-testid={`row-queue-${queue.id}`}>
+                  <TableCell className="font-medium">{queue.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{queue.description || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{getAssignmentLabel(queue)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(queue)} data-testid={`button-edit-queue-${queue.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMutation.mutate(queue.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-queue-${queue.id}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredQueues.length)} de {filteredQueues.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} data-testid="button-prev-queues">
+              <ChevronLeftIcon className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-3">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="icon" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} data-testid="button-next-queues">
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -586,7 +602,23 @@ function FormsSettings() {
     },
   });
 
-  if (isLoading) return <div>Carregando...</div>;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const filteredForms = useMemo(() => {
+    if (!forms) return [];
+    if (!searchTerm) return forms;
+    const lower = searchTerm.toLowerCase();
+    return forms.filter((f) =>
+      f.name.toLowerCase().includes(lower) ||
+      (f.description || "").toLowerCase().includes(lower)
+    );
+  }, [forms, searchTerm]);
+
+  const totalPages = Math.ceil(filteredForms.length / ITEMS_PER_PAGE);
+  const paginatedForms = filteredForms.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  if (isLoading) return <div className="flex items-center justify-center py-12 text-muted-foreground">Carregando...</div>;
 
   if (isBuilderOpen) {
     const builderData = editingForm ? {
@@ -609,55 +641,86 @@ function FormsSettings() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h3 className="text-lg font-medium">Lista de Formulários</h3>
+          <h3 className="text-lg font-semibold">Lista de Formulários</h3>
           <p className="text-sm text-muted-foreground">Gerencie os formulários disponíveis para seus clientes.</p>
         </div>
-        <Button size="sm" className="gap-2" onClick={() => setIsBuilderOpen(true)}>
+        <Button size="sm" className="gap-2" onClick={() => setIsBuilderOpen(true)} data-testid="button-new-form">
           <Plus className="h-4 w-4" />
           Novo Formulário
         </Button>
       </div>
 
-      <div className="grid gap-4">
-        {forms?.map((form) => (
-          <Card key={form.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
-              <div className="space-y-1">
-                <CardTitle className="text-base">{form.name}</CardTitle>
-                <CardDescription>{form.description}</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setEditingForm(form);
-                    setIsBuilderOpen(true);
-                  }}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => deleteFormMutation.mutate(form.id)}
-                  disabled={deleteFormMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-        {forms?.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-            Nenhum formulário cadastrado.
-          </div>
-        )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Pesquisar formulários..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="pl-10"
+          data-testid="input-search-forms"
+        />
       </div>
+
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="text-center">Campos</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedForms.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  {searchTerm ? "Nenhum formulário encontrado." : "Nenhum formulário cadastrado."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedForms.map((form) => (
+                <TableRow key={form.id} data-testid={`row-form-${form.id}`}>
+                  <TableCell className="font-medium">{form.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{form.description || "—"}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary">{Array.isArray(form.fields) ? form.fields.length : 0}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => { setEditingForm(form); setIsBuilderOpen(true); }} data-testid={`button-edit-form-${form.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteFormMutation.mutate(form.id)} disabled={deleteFormMutation.isPending} data-testid={`button-delete-form-${form.id}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredForms.length)} de {filteredForms.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} data-testid="button-prev-forms">
+              <ChevronLeftIcon className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-3">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="icon" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} data-testid="button-next-forms">
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

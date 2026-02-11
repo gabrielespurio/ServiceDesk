@@ -7,6 +7,9 @@ This is a professional Service Desk (Help Desk) MVP application built with a mod
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+- Settings submodules should use data-table format with search field and pagination (10 items per page)
+- UI should be modern, elegant with larger fonts for better readability
+- Language: Portuguese (Brazilian)
 
 ## System Architecture
 

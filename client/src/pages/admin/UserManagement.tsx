@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { type User, insertUserSchema } from "@shared/schema";
@@ -30,16 +30,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, UserCog } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const ITEMS_PER_PAGE = 10;
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administrador",
+  resolver: "Resolvedor",
+  user: "Usuário Final",
+};
 
 export default function UserManagement() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: [api.users.list.path],
@@ -106,13 +116,28 @@ export default function UserManagement() {
     setIsDialogOpen(true);
   };
 
-  if (isLoading) return <div>Carregando...</div>;
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!searchTerm) return users;
+    const lower = searchTerm.toLowerCase();
+    return users.filter((u) =>
+      u.fullName.toLowerCase().includes(lower) ||
+      u.username.toLowerCase().includes(lower) ||
+      u.email.toLowerCase().includes(lower) ||
+      u.role.toLowerCase().includes(lower)
+    );
+  }, [users, searchTerm]);
+
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  if (isLoading) return <div className="flex items-center justify-center py-12 text-muted-foreground">Carregando...</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h3 className="text-lg font-medium">Gerenciamento de Usuários</h3>
+          <h3 className="text-lg font-semibold">Gerenciamento de Usuários</h3>
           <p className="text-sm text-muted-foreground">Cadastre e gerencie os usuários do sistema.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -123,7 +148,7 @@ export default function UserManagement() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" data-testid="button-new-user">
               <Plus className="h-4 w-4" />
               Novo Usuário
             </Button>
@@ -139,7 +164,6 @@ export default function UserManagement() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit((data) => saveMutation.mutate(data))} className="px-6 py-5 space-y-5">
-                {/* Nome Completo - Full Width */}
                 <FormField
                   control={form.control}
                   name="fullName"
@@ -147,18 +171,12 @@ export default function UserManagement() {
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Nome Completo</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Ex: João da Silva"
-                          className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                          {...field}
-                        />
+                        <Input placeholder="Ex: João da Silva" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-user-fullname" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                {/* Usuário e Email - Two Column Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -167,12 +185,7 @@ export default function UserManagement() {
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-gray-700">Usuário</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="usuario.login"
-                            className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                            {...field}
-                            disabled={!!editingUser}
-                          />
+                          <Input placeholder="usuario.login" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-user-username" {...field} disabled={!!editingUser} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -185,20 +198,13 @@ export default function UserManagement() {
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-gray-700">E-mail</FormLabel>
                         <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="email@exemplo.com"
-                            className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                            {...field}
-                          />
+                          <Input type="email" placeholder="email@exemplo.com" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-user-email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-
-                {/* Senha e Perfil - Two Column Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -209,12 +215,7 @@ export default function UserManagement() {
                           Senha {editingUser && <span className="text-gray-400 font-normal">(opcional)</span>}
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg"
-                            {...field}
-                          />
+                          <Input type="password" placeholder="••••••••" className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="input-user-password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -228,7 +229,7 @@ export default function UserManagement() {
                         <FormLabel className="text-sm font-medium text-gray-700">Perfil</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg">
+                            <SelectTrigger className="h-11 border-gray-200 focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg" data-testid="select-user-role">
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                           </FormControl>
@@ -243,29 +244,25 @@ export default function UserManagement() {
                     )}
                   />
                 </div>
-
-                {/* Footer com botões */}
                 <DialogFooter className="pt-4 border-t border-gray-100 mt-6 flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="flex-1 h-11 rounded-lg border-gray-200"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={saveMutation.isPending}
-                    className="flex-1 h-11 rounded-lg"
-                  >
-                    {saveMutation.isPending ? "Salvando..." : "Salvar"}
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1 h-11 rounded-lg border-gray-200" data-testid="button-cancel-user">Cancelar</Button>
+                  <Button type="submit" disabled={saveMutation.isPending} className="flex-1 h-11 rounded-lg" data-testid="button-save-user">{saveMutation.isPending ? "Salvando..." : "Salvar"}</Button>
                 </DialogFooter>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Pesquisar usuários..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="pl-10"
+          data-testid="input-search-users"
+        />
       </div>
 
       <div className="border rounded-md">
@@ -280,37 +277,65 @@ export default function UserManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.fullName}</TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell className="capitalize">{user.role}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => {
-                        if (confirm("Tem certeza que deseja excluir este usuário?")) {
-                          deleteMutation.mutate(user.id);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {paginatedUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  {searchTerm ? "Nenhum usuário encontrado." : "Nenhum usuário cadastrado."}
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              paginatedUsers.map((user) => (
+                <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                  <TableCell className="font-medium">{user.fullName}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.username}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{ROLE_LABELS[user.role] || user.role}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} data-testid={`button-edit-user-${user.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja excluir este usuário?")) {
+                            deleteMutation.mutate(user.id);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                        data-testid={`button-delete-user-${user.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} de {filteredUsers.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} data-testid="button-prev-users">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-3">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="icon" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} data-testid="button-next-users">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
