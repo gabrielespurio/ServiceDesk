@@ -21,10 +21,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Inbox,
   UserCheck,
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-  ListOrdered
+  Loader2
 } from "lucide-react";
 
 type QueueWithStats = {
@@ -41,7 +38,6 @@ type QueueWithStats = {
 export default function QueuesPage() {
   const { user } = useAuth();
   const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const { data: queues, isLoading } = useQuery<QueueWithStats[]>({
     queryKey: ["/api/queues/my-queues"],
@@ -82,56 +78,52 @@ export default function QueuesPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-8rem)]">
-        <aside className={`${isSidebarCollapsed ? "w-16" : "w-full md:w-64"} shrink-0 transition-all duration-300 ease-in-out`}>
-          <div className="flex flex-col h-full bg-white dark:bg-card rounded-xl shadow-sm border overflow-hidden p-2">
-            <button
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="flex items-center justify-center p-2 mb-4 hover:bg-muted rounded-md transition-colors text-muted-foreground"
-              title={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
-              data-testid="button-toggle-sidebar"
-            >
-              {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-            </button>
+        <aside className="w-full md:w-72 shrink-0 transition-all duration-300 ease-in-out">
+          <div className="flex flex-col h-full bg-white dark:bg-card rounded-xl shadow-sm border overflow-hidden">
+            <div className="px-5 py-4 border-b">
+              <h2 className="text-base font-semibold text-foreground">Filas</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Selecione para ver os chamados</p>
+            </div>
 
-            <nav className="flex flex-col space-y-1 overflow-y-auto overflow-x-hidden">
+            <nav className="flex flex-col py-2 px-2 overflow-y-auto overflow-x-hidden flex-1">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : !queues || queues.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                  {isSidebarCollapsed ? "—" : "Nenhuma fila disponível."}
+                <div className="px-3 py-8 text-sm text-muted-foreground text-center">
+                  Nenhuma fila disponível.
                 </div>
               ) : (
-                queues.map((queue) => (
-                  <button
-                    key={queue.id}
-                    onClick={() => setSelectedQueueId(queue.id)}
-                    title={isSidebarCollapsed ? queue.name : ""}
-                    className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all ${
-                      selectedQueueId === queue.id
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    } ${isSidebarCollapsed ? "justify-center px-0" : ""}`}
-                    data-testid={`button-queue-${queue.id}`}
-                  >
-                    <ListOrdered className={`shrink-0 ${isSidebarCollapsed ? "h-5 w-5" : "h-4 w-4"}`} />
-                    {!isSidebarCollapsed && (
-                      <>
-                        <span className="flex-1 text-left truncate">{queue.name}</span>
-                        <span
-                          className={`text-xs tabular-nums shrink-0 ${
-                            selectedQueueId === queue.id ? "text-primary-foreground/80" : "text-muted-foreground"
-                          }`}
-                          data-testid={`text-ticket-count-${queue.id}`}
-                        >
-                          {queue.ticketCount}
-                        </span>
-                        {selectedQueueId === queue.id && <ChevronRight className="h-4 w-4" />}
-                      </>
-                    )}
-                  </button>
-                ))
+                queues.map((queue) => {
+                  const isActive = selectedQueueId === queue.id;
+                  return (
+                    <button
+                      key={queue.id}
+                      onClick={() => setSelectedQueueId(queue.id)}
+                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-150 mb-0.5 ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-foreground hover:bg-muted/80"
+                      }`}
+                      data-testid={`button-queue-${queue.id}`}
+                    >
+                      <span className={`flex-1 text-left truncate text-[15px] ${isActive ? "font-semibold" : "font-medium"}`}>
+                        {queue.name}
+                      </span>
+                      <span
+                        className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${
+                          isActive
+                            ? "bg-white/20 text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                        data-testid={`text-ticket-count-${queue.id}`}
+                      >
+                        {queue.ticketCount}
+                      </span>
+                    </button>
+                  );
+                })
               )}
             </nav>
           </div>
