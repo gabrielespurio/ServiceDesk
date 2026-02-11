@@ -245,26 +245,28 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-[10px] gap-1.5 px-2"
-              onClick={() => setEditingFieldId(field.id)}
-              data-testid={`button-configure-field-${field.id}`}
-            >
-              <Settings2 className="h-3 w-3" />
-              {["list", "multi-select", "checkbox"].includes(field.type)
-                ? `Valores (${field.options?.filter((o: string) => o.trim()).length || 0})`
-                : "Configurações"}
-            </Button>
-            {field.visibilityRules && field.visibilityRules.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-medium">
-                <Eye className="h-3 w-3" />
-                {field.visibilityRules.length} {field.visibilityRules.length === 1 ? "condição" : "condições"}
-              </span>
-            )}
-          </div>
+          {!field.isDefault && (
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] gap-1.5 px-2"
+                onClick={() => setEditingFieldId(field.id)}
+                data-testid={`button-configure-field-${field.id}`}
+              >
+                <Settings2 className="h-3 w-3" />
+                {["list", "multi-select", "checkbox"].includes(field.type)
+                  ? `Valores (${field.options?.filter((o: string) => o.trim()).length || 0})`
+                  : "Configurações"}
+              </Button>
+              {field.visibilityRules && field.visibilityRules.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-medium">
+                  <Eye className="h-3 w-3" />
+                  {field.visibilityRules.length} {field.visibilityRules.length === 1 ? "condição" : "condições"}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {!field.isDefault && (
