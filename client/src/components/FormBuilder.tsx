@@ -473,32 +473,44 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   };
 
   const addOption = (fieldId: string) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId) {
-        return { ...f, options: [...(f.options || []), ""] };
-      }
-      return f;
-    }));
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId) {
+          return { ...f, options: [...(f.options || []), ""] };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const updateOption = (fieldId: string, index: number, value: string) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId && f.options) {
-        const newOptions = [...f.options];
-        newOptions[index] = value;
-        return { ...f, options: newOptions };
-      }
-      return f;
-    }));
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId && f.options) {
+          const newOptions = [...f.options];
+          newOptions[index] = value;
+          return { ...f, options: newOptions };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const removeOption = (fieldId: string, index: number) => {
-    setFields(fields.map(f => {
-      if (f.id === fieldId && f.options) {
-        return { ...f, options: f.options.filter((_, i) => i !== index) };
-      }
-      return f;
-    }));
+    const recursiveUpdate = (items: FormField[]): FormField[] => {
+      return items.map(f => {
+        if (f.id === fieldId && f.options) {
+          return { ...f, options: f.options.filter((_, i) => i !== index) };
+        }
+        if (f.fields) return { ...f, fields: recursiveUpdate(f.fields) };
+        return f;
+      });
+    };
+    setFields(recursiveUpdate(fields));
   };
 
   const findFieldRecursive = (items: FormField[], id: string): FormField | undefined => {
