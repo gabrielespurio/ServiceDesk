@@ -93,6 +93,7 @@ export default function NewTicket() {
 
     const visibleFields = collectVisibleFields(formFields);
     for (const field of visibleFields) {
+      if (field.isDefault) continue;
       if (field.required) {
         const val = formValues[field.id];
         if (!val || (Array.isArray(val) ? val.length === 0 : val.trim() === "")) {
@@ -111,6 +112,7 @@ export default function NewTicket() {
     const customFieldsData: Record<string, { label: string; value: string | string[]; type: string }> = {};
     const visibleFields = collectVisibleFields(formFields);
     for (const field of visibleFields) {
+      if (field.isDefault) continue;
       const val = formValues[field.id];
       if (val !== undefined && val !== "" && !(Array.isArray(val) && val.length === 0)) {
         customFieldsData[field.id] = {
@@ -137,10 +139,63 @@ export default function NewTicket() {
     );
   };
 
+  const renderDefaultField = (field: DynamicField) => {
+    if (field.id === "default_assunto") {
+      return (
+        <div key={field.id} className="space-y-2">
+          <Label className="text-sm font-semibold">Assunto <span className="text-destructive font-bold">*</span></Label>
+          <Input
+            data-testid="input-title"
+            placeholder="Resumo breve do problema"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+      );
+    }
+    if (field.id === "default_descricao") {
+      return (
+        <div key={field.id} className="space-y-2">
+          <Label className="text-sm font-semibold">Descrição <span className="text-destructive font-bold">*</span></Label>
+          <Textarea
+            data-testid="textarea-description"
+            placeholder="Por favor, detalhe os passos para reproduzir o problema..."
+            className="min-h-[120px] resize-none"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+      );
+    }
+    if (field.id === "default_prioridade") {
+      return (
+        <div key={field.id} className="space-y-2">
+          <Label className="text-sm font-semibold">Prioridade</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger data-testid="select-priority">
+              <SelectValue placeholder="Selecione a prioridade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="baixa">Baixa</SelectItem>
+              <SelectItem value="media">Média</SelectItem>
+              <SelectItem value="alta">Alta</SelectItem>
+              <SelectItem value="critica">Crítica</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderDynamicFields = (fieldsToRender: DynamicField[]): React.ReactNode => {
     return fieldsToRender.map((field) => {
       const isVisible = evaluateVisibility(field, formValues);
       if (!isVisible) return null;
+
+      if (field.isDefault) {
+        return renderDefaultField(field);
+      }
 
       if (field.type === "section") {
         return (
@@ -312,85 +367,77 @@ export default function NewTicket() {
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Assunto <span className="text-destructive font-bold">*</span></Label>
-              <Input
-                data-testid="input-title"
-                placeholder="Resumo breve do problema"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Área <span className="text-destructive font-bold">*</span></Label>
-                {formsLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Carregando áreas...
-                  </div>
-                ) : activeForms && activeForms.length > 0 ? (
-                  <Select value={selectedArea} onValueChange={handleAreaChange}>
-                    <SelectTrigger data-testid="select-area">
-                      <SelectValue placeholder="Selecione a área" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeForms.map((form) => (
-                        <SelectItem key={form.id} value={form.name} data-testid={`select-area-${form.id}`}>
-                          {form.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
-                    <FileQuestion className="h-4 w-4" />
-                    Nenhuma área cadastrada
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Prioridade</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger data-testid="select-priority">
-                    <SelectValue placeholder="Selecione a prioridade" />
+              <Label className="text-sm font-semibold">Área <span className="text-destructive font-bold">*</span></Label>
+              {formsLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando áreas...
+                </div>
+              ) : activeForms && activeForms.length > 0 ? (
+                <Select value={selectedArea} onValueChange={handleAreaChange}>
+                  <SelectTrigger data-testid="select-area">
+                    <SelectValue placeholder="Selecione a área" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="baixa">Baixa</SelectItem>
-                    <SelectItem value="media">Média</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="critica">Crítica</SelectItem>
+                    {activeForms.map((form) => (
+                      <SelectItem key={form.id} value={form.name} data-testid={`select-area-${form.id}`}>
+                        {form.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                  <FileQuestion className="h-4 w-4" />
+                  Nenhuma área cadastrada
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Descrição <span className="text-destructive font-bold">*</span></Label>
-              <Textarea
-                data-testid="textarea-description"
-                placeholder="Por favor, detalhe os passos para reproduzir o problema..."
-                className="min-h-[120px] resize-none"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            {selectedForm && formFields.length > 0 && (
-              <div className="space-y-4 border-t pt-6">
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-foreground" data-testid="text-form-title">
-                    {selectedForm.name}
-                  </h3>
-                  {selectedForm.description && (
-                    <p className="text-sm text-muted-foreground">{selectedForm.description}</p>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {renderDynamicFields(formFields)}
-                </div>
+            {selectedForm && (
+              <div className="space-y-4">
+                {renderDynamicFields(formFields)}
               </div>
+            )}
+
+            {!selectedForm && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Assunto <span className="text-destructive font-bold">*</span></Label>
+                  <Input
+                    data-testid="input-title"
+                    placeholder="Resumo breve do problema"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Prioridade</Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger data-testid="select-priority">
+                      <SelectValue placeholder="Selecione a prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baixa">Baixa</SelectItem>
+                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="critica">Crítica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Descrição <span className="text-destructive font-bold">*</span></Label>
+                  <Textarea
+                    data-testid="textarea-description"
+                    placeholder="Por favor, detalhe os passos para reproduzir o problema..."
+                    className="min-h-[120px] resize-none"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+              </>
             )}
 
             <div className="flex justify-end pt-4">

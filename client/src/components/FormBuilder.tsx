@@ -56,7 +56,35 @@ export interface FormField {
   options?: string[];
   visibilityRules?: VisibilityRule[];
   fields?: FormField[];
+  isDefault?: boolean;
 }
+
+const DEFAULT_FIELDS: FormField[] = [
+  {
+    id: "default_assunto",
+    type: "text",
+    label: "Assunto",
+    required: true,
+    placeholder: "Resumo breve do problema",
+    isDefault: true,
+  },
+  {
+    id: "default_descricao",
+    type: "textarea",
+    label: "Descrição",
+    required: true,
+    placeholder: "Por favor, detalhe os passos para reproduzir o problema...",
+    isDefault: true,
+  },
+  {
+    id: "default_prioridade",
+    type: "list",
+    label: "Prioridade",
+    required: true,
+    options: ["Baixa", "Média", "Alta", "Crítica"],
+    isDefault: true,
+  },
+];
 
 interface FormBuilderProps {
   initialData?: {
@@ -132,12 +160,19 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1">
               <Icon className="h-4 w-4 text-primary/70" />
-              <Input
-                value={field.label}
-                onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                className="h-8 font-bold border-none focus-visible:ring-0 p-0 bg-transparent text-sm"
-                data-testid={`input-field-label-${field.id}`}
-              />
+              {field.isDefault ? (
+                <div className="flex items-center gap-2">
+                  <span className="h-8 font-bold text-sm flex items-center">{field.label}</span>
+                  <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Padrão</span>
+                </div>
+              ) : (
+                <Input
+                  value={field.label}
+                  onChange={(e) => updateFieldLabel(field.id, e.target.value)}
+                  className="h-8 font-bold border-none focus-visible:ring-0 p-0 bg-transparent text-sm"
+                  data-testid={`input-field-label-${field.id}`}
+                />
+              )}
             </div>
           </div>
 
@@ -232,15 +267,17 @@ function SortableField({ field, updateFieldLabel, setEditingFieldId, removeField
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => removeField(field.id)}
-          className="text-destructive hover:bg-destructive/10 -mt-1"
-          data-testid={`button-remove-field-${field.id}`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {!field.isDefault && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => removeField(field.id)}
+            className="text-destructive hover:bg-destructive/10 -mt-1"
+            data-testid={`button-remove-field-${field.id}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -290,7 +327,12 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   const { toast } = useToast();
   const [formName, setFormName] = useState(initialData?.name || "");
   const [formDescription, setFormDescription] = useState(initialData?.description || "");
-  const [fields, setFields] = useState<FormField[]>(initialData?.fields ? JSON.parse(initialData.fields) : []);
+  const [fields, setFields] = useState<FormField[]>(() => {
+    const parsed: FormField[] = initialData?.fields ? JSON.parse(initialData.fields) : [];
+    const existingDefaultIds = parsed.filter(f => f.isDefault).map(f => f.id);
+    const missingDefaults = DEFAULT_FIELDS.filter(df => !existingDefaultIds.includes(df.id));
+    return [...missingDefaults, ...parsed.filter(f => !f.isDefault || existingDefaultIds.includes(f.id))];
+  });
 
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [newFieldType, setNewFieldType] = useState("text");
@@ -419,7 +461,7 @@ export default function FormBuilder({ initialData, onSave, onCancel }: FormBuild
   };
 
   const removeField = (id: string) => {
-    // Recursive remove
+    if (id.startsWith("default_")) return;
     const recursiveRemove = (items: FormField[]): FormField[] => {
       return items
         .filter(f => f.id !== id)
