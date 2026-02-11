@@ -14,12 +14,13 @@ import NewTicket from "@/pages/portal/NewTicket";
 import TicketDetail from "@/pages/portal/TicketDetail";
 import ResolverDashboard from "@/pages/dashboard/ResolverDashboard";
 import SettingsPage from "@/pages/admin/SettingsPage";
+import QueuesPage from "@/pages/queues/QueuesPage";
 
 function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      
+
       {/* Customer Portal */}
       <Route path="/portal">
         {() => (
@@ -55,6 +56,16 @@ function Router() {
           <ProtectedRoute allowedRoles={['resolver', 'admin']}>
             <Layout>
               <ResolverDashboard />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/queues">
+        {() => (
+          <ProtectedRoute allowedRoles={['resolver', 'admin']}>
+            <Layout>
+              <QueuesPage />
             </Layout>
           </ProtectedRoute>
         )}

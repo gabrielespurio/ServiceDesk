@@ -1,0 +1,25 @@
+﻿
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+npm : 'NODE_ENV' não 
+é reconhecido como um 
+comando interno
+No linha:1 caractere:1
++ npm run dev > 
+dev_log.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: ('NODE_ENV'   
+  não ...comando i    
+nterno:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+ou externo, um 
+programa operável ou 
+um arquivo em lotes.

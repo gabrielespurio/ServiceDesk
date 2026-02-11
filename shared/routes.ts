@@ -50,6 +50,7 @@ export const api = {
         status: z.string().optional(),
         priority: z.string().optional(),
         assignedToMe: z.string().optional(),
+        queueId: z.number().optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof tickets.$inferSelect & { creator: typeof users.$inferSelect, assignee: typeof users.$inferSelect | null }>()),
@@ -209,6 +210,53 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/teams/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  queues: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/queues',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/queues',
+      input: z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        teamIds: z.array(z.number()),
+        userIds: z.array(z.number()),
+        active: z.boolean().optional(),
+      }),
+      responses: {
+        201: z.any(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/queues/:id',
+      input: z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+        teamIds: z.array(z.number()).optional(),
+        userIds: z.array(z.number()).optional(),
+        active: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/queues/:id',
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,

@@ -1,0 +1,13 @@
+﻿9:57:17 AM [express] serving on port 5000
+my-queues: fetching for user ID: 2, role: admin
+getQueuesWithStats: user admin, role admin
+getServiceQueues: found 2 queues
+getQueuesWithStats: admin sees all 2 queues
+getQueuesWithStats: entering loop for 2 queues
+getQueuesWithStats: counting tickets for queue 8 (Suporte)
+getQueuesWithStats: done for queue 8
+getQueuesWithStats: counting tickets for queue 7 (teste 2)
+getQueuesWithStats: done for queue 7
+getQueuesWithStats: returning 2 queues
+my-queues: returning 2 queues
+9:57:29 AM [express] GET /api/queues/my-queues 200 in 401ms :: [{"id":8,"name":"Suporte","description":"","active":true,"createdAt":"2026-02-10T12:13:39.175Z","teams":[],"users":[{"id":2,"username":"admin","password":"$2b$10$Y7JzTdPh8yp9Bxsp5Wz/EuneBKBVaA2QP/gvmmDaBKpNuLv0jXkXe","fullName":"System Admin","role":"admin","email":"admin@example.com","createdAt":"2026-02-09T15:35:21.808Z"}],"ticketCount":0},{"id":7,"name":"teste 2","description":"teste","active":true,"createdAt":"2026-02-10T02:57:07.570Z","teams":[{"id":3,"name":"teste","description":"teste","createdAt":"2026-02-09T15:44:26.336Z"},{"id":4,"name":"Teste Equipe","description":"teste","createdAt":"2026-02-09T15:46:56.410Z"}],"users":[],"ticketCount":0}]

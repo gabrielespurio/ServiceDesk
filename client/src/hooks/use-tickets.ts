@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertTicket } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import { type InsertTicket } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 type TicketFilters = {
   status?: string;
   priority?: string;
   assignedToMe?: string;
+  queueId?: number;
 };
 
 export function useTickets(filters?: TicketFilters) {
@@ -14,6 +16,7 @@ export function useTickets(filters?: TicketFilters) {
   if (filters?.status && filters.status !== "all") queryParams.append("status", filters.status);
   if (filters?.priority && filters.priority !== "all") queryParams.append("priority", filters.priority);
   if (filters?.assignedToMe) queryParams.append("assignedToMe", filters.assignedToMe);
+  if (filters?.queueId) queryParams.append("queueId", String(filters.queueId));
 
   const queryString = queryParams.toString();
   const url = `${api.tickets.list.path}${queryString ? `?${queryString}` : ""}`;

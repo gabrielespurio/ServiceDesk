@@ -26,6 +26,7 @@ export const tickets = pgTable("tickets", {
   category: text("category").notNull(), // e.g., Hardware, Software, Access
   creatorId: integer("creator_id").notNull(),
   assignedToId: integer("assigned_to_id"),
+  queueId: integer("queue_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -85,20 +86,47 @@ export const serviceQueues = pgTable("service_queues", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  type: text("type").notNull().default("team"), // 'team' or 'user'
-  teamId: integer("team_id"),
-  userId: integer("user_id"),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const serviceQueuesRelations = relations(serviceQueues, ({ one }) => ({
+// Junction table for queue-teams many-to-many
+export const queueTeams = pgTable("queue_teams", {
+  id: serial("id").primaryKey(),
+  queueId: integer("queue_id").notNull(),
+  teamId: integer("team_id").notNull(),
+});
+
+// Junction table for queue-users many-to-many
+export const queueUsers = pgTable("queue_users", {
+  id: serial("id").primaryKey(),
+  queueId: integer("queue_id").notNull(),
+  userId: integer("user_id").notNull(),
+});
+
+export const serviceQueuesRelations = relations(serviceQueues, ({ many }) => ({
+  queueTeams: many(queueTeams),
+  queueUsers: many(queueUsers),
+}));
+
+export const queueTeamsRelations = relations(queueTeams, ({ one }) => ({
+  queue: one(serviceQueues, {
+    fields: [queueTeams.queueId],
+    references: [serviceQueues.id],
+  }),
   team: one(teams, {
-    fields: [serviceQueues.teamId],
+    fields: [queueTeams.teamId],
     references: [teams.id],
   }),
+}));
+
+export const queueUsersRelations = relations(queueUsers, ({ one }) => ({
+  queue: one(serviceQueues, {
+    fields: [queueUsers.queueId],
+    references: [serviceQueues.id],
+  }),
   user: one(users, {
-    fields: [serviceQueues.userId],
+    fields: [queueUsers.userId],
     references: [users.id],
   }),
 }));
@@ -136,6 +164,10 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
     fields: [tickets.assignedToId],
     references: [users.id],
     relationName: "assignee",
+  }),
+  queue: one(serviceQueues, {
+    fields: [tickets.queueId],
+    references: [serviceQueues.id],
   }),
   messages: many(messages),
 }));

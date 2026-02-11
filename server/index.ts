@@ -1,7 +1,28 @@
+import "dotenv/config";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+
+async function ensureSchema() {
+  try {
+    const columnCheck = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'tickets' AND column_name = 'queue_id'
+    `);
+
+    if (columnCheck.rows.length === 0) {
+      console.log("Migration: Adding queue_id column to tickets table...");
+      await db.execute(sql`ALTER TABLE tickets ADD COLUMN queue_id integer REFERENCES service_queues(id)`);
+      console.log("Migration: Column queue_id added successfully.");
+    }
+  } catch (error) {
+    console.error("Migration check failed:", error);
+  }
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +81,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureSchema();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

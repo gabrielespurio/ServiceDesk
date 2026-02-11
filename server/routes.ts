@@ -10,9 +10,14 @@ import passport from "passport";
 export async function registerRoutes(
   httpServer: Server,
   app: Express
-): Promise<Server> {
+) {
+  app.get("/api/ping", (_req, res) => {
+    console.log("PING HANDLER HIT");
+    res.json({ message: "pong" });
+  });
   // Setup Authentication first
   setupAuth(app);
+
 
   // === AUTH ROUTES ===
   app.post(api.auth.register.path, async (req, res) => {
@@ -25,7 +30,7 @@ export async function registerRoutes(
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
       const user = await storage.createUser({ ...input, password: hashedPassword });
-      
+
       // Auto login after register
       req.login(user, (err) => {
         if (err) return res.status(500).json({ message: "Login failed after registration" });
@@ -45,7 +50,7 @@ export async function registerRoutes(
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
-      
+
       req.login(user, (err) => {
         if (err) return next(err);
         return res.status(200).json(user);
@@ -68,7 +73,7 @@ export async function registerRoutes(
   // === TICKET ROUTES ===
   app.get(api.tickets.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     // Apply filters based on query and role
     const filters = {
       status: req.query.status as string,
@@ -76,15 +81,16 @@ export async function registerRoutes(
       assignedToMe: req.query.assignedToMe as string,
       userId: (req.user as any).id,
       role: (req.user as any).role,
+      queueId: req.query.queueId ? Number(req.query.queueId) : undefined,
     };
-    
+
     const tickets = await storage.getTickets(filters);
     res.json(tickets);
   });
 
   app.post(api.tickets.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     try {
       const input = api.tickets.create.input.parse(req.body);
       const ticket = await storage.createTicket({
@@ -94,7 +100,7 @@ export async function registerRoutes(
       });
       res.status(201).json(ticket);
     } catch (err) {
-       if (err instanceof z.ZodError) {
+      if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -103,14 +109,14 @@ export async function registerRoutes(
 
   app.get(api.tickets.get.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const ticket = await storage.getTicket(Number(req.params.id));
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-    
+
     // Basic permissions: Admin/Resolver can see all. User can see own.
     const user = req.user as any;
     if (user.role === 'user' && ticket.creatorId !== user.id) {
-       return res.status(403).json({ message: "Forbidden" });
+      return res.status(403).json({ message: "Forbidden" });
     }
 
     res.json(ticket);
@@ -118,18 +124,18 @@ export async function registerRoutes(
 
   app.patch(api.tickets.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const updates = api.tickets.update.input.parse(req.body);
     const ticket = await storage.updateTicket(Number(req.params.id), updates);
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-    
+
     res.json(ticket);
   });
 
   // === MESSAGE ROUTES ===
   app.get(api.messages.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const messages = await storage.getMessages(Number(req.params.ticketId));
     // Filter internal notes if user is not resolver/admin
     const user = req.user as any;
@@ -142,7 +148,7 @@ export async function registerRoutes(
 
   app.post(api.messages.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const input = api.messages.create.input.parse(req.body);
     const message = await storage.createMessage({
       ...input,
@@ -205,11 +211,11 @@ export async function registerRoutes(
     try {
       const id = Number(req.params.id);
       const input = api.users.update.input.parse(req.body);
-      
+
       if (input.password) {
         input.password = await bcrypt.hash(input.password, 10);
       }
-      
+
       const user = await storage.updateUser(id, input);
       if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
       res.json(user);
@@ -316,13 +322,21 @@ export async function registerRoutes(
     res.json({ message: "Team deleted successfully" });
   });
 
-  // === QUEUE ROUTES ===
   app.get("/api/queues", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
       return res.status(403).json({ message: "Forbidden" });
     }
-    const queues = await storage.getServiceQueues();
-    res.json(queues);
+    try {
+      const queues = await storage.getServiceQueues();
+      res.json(queues);
+    } catch (err: any) {
+      console.error("Error fetching queues:", err);
+      res.status(500).json({
+        message: "Erro ao listar filas",
+        error: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
+    }
   });
 
   app.post("/api/queues", async (req, res) => {
@@ -330,10 +344,18 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
     try {
-      const queue = await storage.createServiceQueue(req.body);
+      console.log("Creating queue with body:", JSON.stringify(req.body));
+      const { teamIds = [], userIds = [], ...queueData } = req.body;
+      const queue = await storage.createServiceQueue(queueData, teamIds, userIds);
+      console.log("Created queue:", JSON.stringify(queue));
       res.status(201).json(queue);
-    } catch (err) {
-      res.status(500).json({ message: "Erro ao criar fila" });
+    } catch (err: any) {
+      console.error("Error creating queue:", err);
+      res.status(500).json({
+        message: "Erro ao criar fila",
+        error: err.message,
+        details: err.detail || err.hint || undefined
+      });
     }
   });
 
@@ -342,7 +364,8 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
     try {
-      const queue = await storage.updateServiceQueue(Number(req.params.id), req.body);
+      const { teamIds, userIds, ...queueData } = req.body;
+      const queue = await storage.updateServiceQueue(Number(req.params.id), queueData, teamIds, userIds);
       if (!queue) return res.status(404).json({ message: "Fila não encontrada" });
       res.json(queue);
     } catch (err) {
@@ -359,11 +382,28 @@ export async function registerRoutes(
     res.json({ message: "Fila excluída com sucesso" });
   });
 
+  app.get("/api/queues/my-queues", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log("my-queues: Unauthorized");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const user = req.user as any;
+      console.log(`my-queues: fetching for user ${user.username} (ID: ${user.id}, role: ${user.role})`);
+      const queues = await storage.getQueuesWithStats(user.id);
+      console.log(`my-queues: returning ${queues.length} queues`);
+      res.json(queues);
+    } catch (err: any) {
+      console.error("my-queues error:", err);
+      res.status(500).json({ message: "Erro ao listar minhas filas", error: err.message });
+    }
+  });
+
   // Seed Data if empty
   const users = await storage.getResolvers(); // Just a quick check
   if (users.length === 0) {
     const hashedPassword = await bcrypt.hash("password123", 10);
-    
+
     await storage.createUser({
       username: "admin",
       password: hashedPassword,
@@ -398,7 +438,7 @@ export async function registerRoutes(
       creatorId: user1.id,
       assignedToId: null,
     });
-    
+
     console.log("Banco de dados semeado com usuários e chamados iniciais");
   }
 

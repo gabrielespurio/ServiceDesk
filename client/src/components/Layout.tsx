@@ -1,12 +1,13 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Ticket, 
-  PlusCircle, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Ticket,
+  PlusCircle,
+  LogOut,
   Settings,
-  Menu
+  Menu,
+  ListOrdered
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,12 +23,12 @@ interface SidebarProps {
   setMobileMenuOpen: (open: boolean) => void;
 }
 
-const SidebarContent = ({ 
-  isMobile = false, 
-  user, 
-  logout, 
-  location, 
-  setMobileMenuOpen 
+const SidebarContent = ({
+  isMobile = false,
+  user,
+  logout,
+  location,
+  setMobileMenuOpen
 }: SidebarProps) => {
   const isResolver = user.role === "resolver" || user.role === "admin";
   const isAdmin = user.role === "admin";
@@ -35,6 +36,7 @@ const SidebarContent = ({
   const navItems = [
     ...(isResolver ? [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/queues", label: "Filas", icon: ListOrdered },
     ] : [
       { href: "/portal", label: "My Tickets", icon: Ticket },
       { href: "/portal/new", label: "New Ticket", icon: PlusCircle },
@@ -80,13 +82,11 @@ const SidebarContent = ({
                 <TooltipTrigger asChild>
                   <Link href={item.href}>
                     <div
-                      className={`flex items-center transition-all duration-200 cursor-pointer rounded-lg ${
-                        isMobile ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center"
-                      } ${
-                        isActive 
-                          ? "bg-primary text-white shadow-md shadow-primary/20" 
+                      className={`flex items-center transition-all duration-200 cursor-pointer rounded-lg ${isMobile ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center"
+                        } ${isActive
+                          ? "bg-primary text-white shadow-md shadow-primary/20"
                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-                      }`}
+                        }`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : "text-muted-foreground"}`} />
@@ -113,11 +113,10 @@ const SidebarContent = ({
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                className={`w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all ${
-                  isMobile ? "justify-start gap-2" : "justify-center p-0 h-10"
-                }`}
+              <Button
+                variant="outline"
+                className={`w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all ${isMobile ? "justify-start gap-2" : "justify-center p-0 h-10"
+                  }`}
                 onClick={() => logout()}
               >
                 <LogOut className="w-5 h-5 shrink-0" />
@@ -151,38 +150,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:block fixed inset-y-0 left-0 z-20">
-        <SidebarContent 
-          user={user} 
-          logout={logout} 
-          location={location} 
-          setMobileMenuOpen={setMobileMenuOpen} 
+        <SidebarContent
+          user={user}
+          logout={logout}
+          location={location}
+          setMobileMenuOpen={setMobileMenuOpen}
         />
       </aside>
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b z-30 flex items-center px-4 justify-between">
-         <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center">
-              <Ticket className="w-5 h-5" />
-            </div>
-            HelpDesk
-         </h1>
-         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-           <SheetTrigger asChild>
-             <Button variant="ghost" size="icon">
-               <Menu className="w-5 h-5" />
-             </Button>
-           </SheetTrigger>
-           <SheetContent side="left" className="p-0 w-64">
-             <SidebarContent 
-               isMobile 
-               user={user} 
-               logout={logout} 
-               location={location} 
-               setMobileMenuOpen={setMobileMenuOpen} 
-             />
-           </SheetContent>
-         </Sheet>
+        <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center">
+            <Ticket className="w-5 h-5" />
+          </div>
+          HelpDesk
+        </h1>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="w-5 h-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64">
+            <SidebarContent
+              isMobile
+              user={user}
+              logout={logout}
+              location={location}
+              setMobileMenuOpen={setMobileMenuOpen}
+            />
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Main Content */}

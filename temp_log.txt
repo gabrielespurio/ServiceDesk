@@ -1,0 +1,50 @@
+﻿server_log.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (node:event   
+ s:502:String) [],    
+ RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+      throw er; // 
+Unhandled 'error' 
+event
+      ^
+
+Error: listen 
+EADDRINUSE: address 
+already in use 
+0.0.0.0:5000
+    at Server.setupLis
+tenHandle [as 
+_listen2] 
+(node:net:1908:16)
+    at 
+listenInCluster 
+(node:net:1965:12)
+    at doListen 
+(node:net:2139:7)
+    at process.process
+TicksAndRejections (no
+de:internal/process/ta
+sk_queues:83:21)
+Emitted 'error' event 
+on Server instance at:
+    at emitErrorNT 
+(node:net:1944:8)
+    at process.process
+TicksAndRejections (no
+de:internal/process/ta
+sk_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v20.19.3
