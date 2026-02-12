@@ -36,8 +36,24 @@ export default function NewTicket() {
     queryKey: [api.forms.listActive.path],
   });
 
+  const DEFAULT_FIELD_IDS = ["default_assunto", "default_descricao", "default_prioridade"];
+  const DEFAULT_FIELDS: DynamicField[] = [
+    { id: "default_assunto", type: "text", label: "Assunto", required: true, placeholder: "Resumo breve do problema", isDefault: true },
+    { id: "default_descricao", type: "textarea", label: "Descrição", required: true, placeholder: "Por favor, detalhe os passos para reproduzir o problema...", isDefault: true },
+    { id: "default_prioridade", type: "list", label: "Prioridade", required: true, options: ["Baixa", "Média", "Alta", "Crítica"], isDefault: true },
+  ];
+
   const selectedForm = activeForms?.find(f => f.name === selectedArea);
-  const formFields: DynamicField[] = selectedForm ? JSON.parse(selectedForm.fields) : [];
+  const formFields: DynamicField[] = (() => {
+    if (!selectedForm) return [];
+    const parsed: DynamicField[] = JSON.parse(selectedForm.fields);
+    const existingDefaultIds = parsed.filter(f => f.isDefault).map(f => f.id);
+    const missingDefaults = DEFAULT_FIELDS.filter(df => !existingDefaultIds.includes(df.id));
+    if (missingDefaults.length > 0) {
+      return [...missingDefaults, ...parsed];
+    }
+    return parsed;
+  })();
 
   const handleAreaChange = (area: string) => {
     setSelectedArea(area);
