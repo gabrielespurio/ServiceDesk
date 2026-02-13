@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema, insertTeamSchema, teams } from './schema';
+import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema, insertTeamSchema, teams, insertTriggerSchema, triggers } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -264,6 +264,41 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/queues/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  triggers: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/triggers',
+      responses: {
+        200: z.array(z.custom<typeof triggers.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/triggers',
+      input: insertTriggerSchema.omit({ active: true }).extend({ active: z.boolean().optional() }),
+      responses: {
+        201: z.custom<typeof triggers.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/triggers/:id',
+      input: insertTriggerSchema.partial(),
+      responses: {
+        200: z.custom<typeof triggers.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/triggers/:id',
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,

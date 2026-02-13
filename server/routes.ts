@@ -405,6 +405,59 @@ export async function registerRoutes(
     }
   });
 
+  // === TRIGGERS ROUTES ===
+  app.get("/api/triggers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const triggers = await storage.getTriggers();
+    res.json(triggers);
+  });
+
+  app.post("/api/triggers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const input = api.triggers.create.input.parse(req.body);
+      const trigger = await storage.createTrigger(input);
+      res.status(201).json(trigger);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error(err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/triggers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const id = Number(req.params.id);
+      const input = api.triggers.update.input.parse(req.body);
+      const trigger = await storage.updateTrigger(id, input);
+      if (!trigger) return res.status(404).json({ message: "Trigger not found" });
+      res.json(trigger);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/triggers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const success = await storage.deleteTrigger(Number(req.params.id));
+    if (!success) return res.status(404).json({ message: "Trigger not found" });
+    res.json({ message: "Trigger deleted successfully" });
+  });
+
   // Seed Data if empty
   const users = await storage.getResolvers(); // Just a quick check
   if (users.length === 0) {

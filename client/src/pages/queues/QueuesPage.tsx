@@ -47,6 +47,7 @@ export default function QueuesPage() {
       const res = await apiRequest("GET", "/api/queues/my-queues");
       return res.json();
     },
+    refetchInterval: 5000,
   });
 
   const isMyQueue = selectedView?.type === "my-queue";
@@ -100,22 +101,20 @@ export default function QueuesPage() {
             <nav className="flex flex-col py-2 px-2 overflow-y-auto overflow-x-hidden flex-1">
               <button
                 onClick={() => setSelectedView({ type: "my-queue" })}
-                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-150 mb-1 ${
-                  isMyQueue
+                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-150 mb-1 ${isMyQueue
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-foreground hover:bg-muted/80"
-                }`}
+                  }`}
                 data-testid="button-my-queue"
               >
                 <span className={`flex-1 text-left truncate text-[15px] ${isMyQueue ? "font-semibold" : "font-medium"}`}>
                   Minha Fila
                 </span>
                 <span
-                  className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${
-                    isMyQueue
+                  className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${isMyQueue
                       ? "bg-white/20 text-primary-foreground"
                       : "bg-muted text-muted-foreground"
-                  }`}
+                    }`}
                   data-testid="text-my-queue-count"
                 >
                   {myTicketCount}
@@ -139,22 +138,20 @@ export default function QueuesPage() {
                     <button
                       key={queue.id}
                       onClick={() => setSelectedView({ type: "queue", id: queue.id })}
-                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-150 mb-0.5 ${
-                        isActive
+                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-150 mb-0.5 ${isActive
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "text-foreground hover:bg-muted/80"
-                      }`}
+                        }`}
                       data-testid={`button-queue-${queue.id}`}
                     >
                       <span className={`flex-1 text-left truncate text-[15px] ${isActive ? "font-semibold" : "font-medium"}`}>
                         {queue.name}
                       </span>
                       <span
-                        className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${
-                          isActive
+                        className={`text-xs font-semibold tabular-nums shrink-0 min-w-[24px] h-6 flex items-center justify-center rounded-full px-2 ${isActive
                             ? "bg-white/20 text-primary-foreground"
                             : "bg-muted text-muted-foreground"
-                        }`}
+                          }`}
                         data-testid={`text-ticket-count-${queue.id}`}
                       >
                         {queue.ticketCount}
@@ -253,9 +250,9 @@ export default function QueuesPage() {
                               <TableCell className="text-muted-foreground text-sm">
                                 {ticket.createdAt
                                   ? formatDistanceToNow(new Date(ticket.createdAt), {
-                                      addSuffix: true,
-                                      locale: ptBR,
-                                    })
+                                    addSuffix: true,
+                                    locale: ptBR,
+                                  })
                                   : "—"}
                               </TableCell>
                               <TableCell className="text-right">

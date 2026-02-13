@@ -195,5 +195,22 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export const triggers = pgTable("triggers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  active: boolean("active").default(true).notNull(),
+  event: text("event").notNull(), // e.g., 'ticket.created', 'ticket.updated'
+  conditions: text("conditions").notNull(), // JSON string representing conditions
+  actions: text("actions").notNull(), // JSON string representing actions
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTriggerSchema = createInsertSchema(triggers).omit({ id: true, createdAt: true, updatedAt: true });
+export type Trigger = typeof triggers.$inferSelect;
+export type InsertTrigger = z.infer<typeof insertTriggerSchema>;
+
+// Add Message Exports
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

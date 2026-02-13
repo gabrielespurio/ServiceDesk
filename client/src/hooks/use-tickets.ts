@@ -63,6 +63,7 @@ export function useCreateTicket() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.tickets.list.path] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues/my-queues"] });
       toast({ title: "Ticket Created", description: "Support team has been notified." });
     },
     onError: (error) => {
@@ -90,6 +91,7 @@ export function useUpdateTicket() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [api.tickets.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.tickets.get.path, data.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/queues/my-queues"] });
       toast({ title: "Ticket Updated" });
     },
     onError: (error) => {

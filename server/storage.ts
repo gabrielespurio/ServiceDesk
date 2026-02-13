@@ -1,4 +1,4 @@
-import { users, tickets, messages, forms, teams, teamMembers, serviceQueues, queueTeams, queueUsers, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember, type ServiceQueue, type InsertServiceQueue } from "@shared/schema";
+import { users, tickets, messages, forms, teams, teamMembers, serviceQueues, queueTeams, queueUsers, triggers, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember, type ServiceQueue, type InsertServiceQueue, type Trigger, type InsertTrigger } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -44,6 +44,12 @@ export interface IStorage {
 
   // Stats
   getStats(): Promise<{ totalTickets: number; openTickets: number; resolvedTickets: number; avgResolutionTime: number }>;
+
+  // Triggers
+  getTriggers(): Promise<Trigger[]>;
+  createTrigger(trigger: InsertTrigger): Promise<Trigger>;
+  updateTrigger(id: number, updates: Partial<InsertTrigger>): Promise<Trigger | undefined>;
+  deleteTrigger(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,7 +126,183 @@ export class DatabaseStorage implements IStorage {
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
     const [newTicket] = await db.insert(tickets).values(ticket).returning();
-    return newTicket;
+    return this.processTriggers(newTicket, "ticket.created");
+  }
+
+  async processTriggers(ticket: Ticket, eventType: string): Promise<Ticket> {
+    try {
+      const allTriggers = await this.getTriggers();
+      const activeTriggers = allTriggers.filter(t => t.active);
+
+      if (activeTriggers.length === 0) return ticket;
+
+      const formsList = await this.getForms();
+      const ticketForm = formsList.find(f => f.name === ticket.category);
+      const ticketFormId = ticketForm?.id.toString();
+
+      let updates: Partial<InsertTicket> & { assignedToId?: number | null } = {};
+      let hasUpdates = false;
+
+      console.log(`[Triggers] Processing ${activeTriggers.length} active triggers for ticket #${ticket.id} (event: ${eventType}, category: ${ticket.category}, formId: ${ticketFormId})`);
+
+      for (const trigger of activeTriggers) {
+        let conditions = { all: [] as any[], any: [] as any[] };
+        try {
+          const parsed = JSON.parse(trigger.conditions);
+          if (Array.isArray(parsed)) {
+            conditions.all = parsed;
+          } else {
+            conditions.all = parsed.all || [];
+            conditions.any = parsed.any || [];
+          }
+        } catch (e) {
+          console.error(`[Triggers] Failed to parse conditions for trigger ${trigger.id}`, e);
+          continue;
+        }
+
+        const compare = (actual: string | undefined, expected: string, operator: string): boolean => {
+          if (!actual) return operator === "not_equals";
+          if (operator === "not_equals") return actual !== expected;
+          return actual === expected; // default: "equals"
+        };
+
+        const checkCondition = (c: any): boolean => {
+          const operator = c.operator || "equals";
+
+          // Ticket Event condition
+          if (c.field === "ticket_event") {
+            if (c.value === "created") return eventType === "ticket.created";
+            if (c.value === "updated") return eventType === "ticket.updated";
+            if (c.value === "any") return true; // Created or Updated
+            return false;
+          }
+
+          // Form condition — compare form ID
+          if (c.field === "form") {
+            return compare(ticketFormId, c.value, operator);
+          }
+
+          // Priority condition
+          if (c.field === "priority") {
+            return compare(ticket.priority, c.value, operator);
+          }
+
+          // Status condition
+          if (c.field === "status") {
+            return compare(ticket.status, c.value, operator);
+          }
+
+          // Queue condition
+          if (c.field === "queue") {
+            return compare(ticket.queueId?.toString(), c.value, operator);
+          }
+
+          // Legacy: also support "ticket" field name for backward compat
+          if (c.field === "ticket") {
+            if (c.value === "created") return eventType === "ticket.created";
+            if (c.value === "updated") return eventType === "ticket.updated";
+            if (c.value === "created_updated" || c.value === "any") return true;
+            return false;
+          }
+
+          console.warn(`[Triggers] Unknown condition field: ${c.field}`);
+          return false;
+        };
+
+        const matchAll = conditions.all.length === 0 || conditions.all.every(checkCondition);
+        const finalMatchAny = conditions.any.length > 0 ? conditions.any.some(checkCondition) : true;
+
+        if (matchAll && finalMatchAny) {
+          console.log(`[Triggers] ✓ Trigger "${trigger.name}" (ID: ${trigger.id}) MATCHED`);
+
+          let actions: any[] = [];
+          try {
+            actions = JSON.parse(trigger.actions);
+          } catch (e) {
+            console.error(`[Triggers] Failed to parse actions for trigger ${trigger.id}`, e);
+            continue;
+          }
+
+          for (const action of actions) {
+            console.log(`[Triggers]   → Action: type="${action.type}", value="${action.value}"`);
+
+            // Assign to Queue
+            if (action.type === "assign_queue" || action.type === "action.assign_queue") {
+              const queueId = parseInt(action.value, 10);
+              if (!isNaN(queueId)) {
+                updates.queueId = queueId;
+                hasUpdates = true;
+                console.log(`[Triggers]   ✓ Set queueId = ${queueId}`);
+              }
+            }
+
+            // Assign to Resolver
+            if (action.type === "assign_resolver") {
+              const userId = parseInt(action.value, 10);
+              if (!isNaN(userId)) {
+                updates.assignedToId = userId;
+                hasUpdates = true;
+                console.log(`[Triggers]   ✓ Set assignedToId = ${userId}`);
+              }
+            }
+
+            // Set Priority
+            if (action.type === "set_priority") {
+              const validPriorities = ["baixa", "media", "alta", "critica"];
+              if (validPriorities.includes(action.value)) {
+                updates.priority = action.value as any;
+                hasUpdates = true;
+                console.log(`[Triggers]   ✓ Set priority = ${action.value}`);
+              }
+            }
+
+            // Set Status
+            if (action.type === "set_status") {
+              const validStatuses = ["aberto", "em_andamento", "aguardando_usuario", "resolvido", "fechado"];
+              if (validStatuses.includes(action.value)) {
+                updates.status = action.value as any;
+                hasUpdates = true;
+                console.log(`[Triggers]   ✓ Set status = ${action.value}`);
+              }
+            }
+          }
+        } else {
+          console.log(`[Triggers] ✗ Trigger "${trigger.name}" (ID: ${trigger.id}) did not match`);
+        }
+      }
+
+      if (hasUpdates) {
+        // Validate queue exists before attempting update
+        if (updates.queueId) {
+          const queuesList = await db.select().from(serviceQueues).where(eq(serviceQueues.id, updates.queueId));
+          if (queuesList.length === 0) {
+            console.warn(`[Triggers] Queue ID ${updates.queueId} does not exist, skipping queue assignment`);
+            delete updates.queueId;
+            hasUpdates = Object.keys(updates).length > 0;
+          }
+        }
+      }
+
+      if (hasUpdates) {
+        try {
+          console.log(`[Triggers] Applying updates to ticket #${ticket.id}:`, JSON.stringify(updates));
+          const [updatedTicket] = await db.update(tickets)
+            .set(updates)
+            .where(eq(tickets.id, ticket.id))
+            .returning();
+          return updatedTicket;
+        } catch (updateError: any) {
+          console.error(`[Triggers] Failed to apply updates to ticket #${ticket.id}:`, updateError.message || updateError);
+          return ticket;
+        }
+      }
+
+      return ticket;
+
+    } catch (error) {
+      console.error("[Triggers] Error processing triggers:", error);
+      return ticket;
+    }
   }
 
   async updateTicket(id: number, updates: Partial<InsertTicket> & { assignedToId?: number | null }): Promise<Ticket | undefined> {
@@ -380,6 +562,27 @@ export class DatabaseStorage implements IStorage {
 
     console.log(`getQueuesWithStats: returning ${stats.length} queues`);
     return stats;
+  }
+
+
+  // Triggers
+  async getTriggers(): Promise<Trigger[]> {
+    return db.select().from(triggers).orderBy(desc(triggers.createdAt));
+  }
+
+  async createTrigger(trigger: InsertTrigger): Promise<Trigger> {
+    const [newTrigger] = await db.insert(triggers).values(trigger).returning();
+    return newTrigger;
+  }
+
+  async updateTrigger(id: number, updates: Partial<InsertTrigger>): Promise<Trigger | undefined> {
+    const [updatedTrigger] = await db.update(triggers).set(updates).where(eq(triggers.id, id)).returning();
+    return updatedTrigger;
+  }
+
+  async deleteTrigger(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(triggers).where(eq(triggers.id, id)).returning();
+    return !!deleted;
   }
 }
 

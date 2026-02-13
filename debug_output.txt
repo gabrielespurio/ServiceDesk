@@ -1,0 +1,47 @@
+=== ALL TRIGGERS ===
+Trigger ID: 1 | Name: Test Trigger | Active: true
+  Event: ticket.updated
+  Conditions: {"all":[],"any":[]}
+  Actions: [{"id":"test","type":"assign_queue","value":"1"}]
+Trigger ID: 3 | Name: Test Trigger | Active: true
+  Event: ticket.created
+  Conditions: {"all":[{"field":"form","value":"4"},{"field":"ticket","value":"created"}],"any":[]}
+  Actions: [{"type":"action.assign_queue","value":"9"}]
+Trigger ID: 4 | Name: Test Trigger | Active: true
+  Event: ticket.created
+  Conditions: {"all":[{"field":"form","value":"5"},{"field":"ticket","value":"created"}],"any":[]}
+  Actions: [{"type":"action.assign_queue","value":"10"}]
+Trigger ID: 5 | Name: Test Trigger | Active: true
+  Event: ticket.created
+  Conditions: {"all":[{"field":"form","value":"6"},{"field":"ticket","value":"created"}],"any":[]}
+  Actions: [{"type":"action.assign_queue","value":"11"}]
+Trigger ID: 6 | Name: Test Trigger 2 | Active: true
+  Event: ticket.created
+  Conditions: {"all":[{"field":"form","value":"7"},{"field":"ticket","value":"created"}],"any":[]}
+  Actions: [{"type":"action.assign_queue","value":"12"}]
+Trigger ID: 2 | Name: teste | Active: true
+  Event: ticket.created
+  Conditions: {"all":[{"id":"5214b63f-4524-4b4a-9ba6-def22ea8b5b8","field":"ticket_event","operator":"equals","value":"created"},{"id":"8b04ee6c-ca6d-458b-87ff-5fa254621e93","field":"form","operator":"equals","value":"3"}],"any":[]}
+  Actions: [{"id":"a6b4c31c-4430-47e0-8f3c-cc33c9cbcdeb","type":"assign_queue","value":"8"}]
+
+=== ALL FORMS ===
+Form ID: 2 | Name: teste | Active: true
+Form ID: 3 | Name: TI | Active: true
+Form ID: 4 | Name: Test Trigger Form | Active: true
+Form ID: 5 | Name: Test Trigger Form | Active: true
+Form ID: 6 | Name: Test Trigger Form | Active: true
+Form ID: 7 | Name: Test Trigger Form 2 | Active: true
+
+=== ALL QUEUES ===
+Queue ID: 7 | Name: teste 2 | Active: true
+Queue ID: 8 | Name: Suporte | Active: true
+Queue ID: 9 | Name: Test Trigger Queue | Active: true
+Queue ID: 10 | Name: Test Trigger Queue | Active: true
+Queue ID: 11 | Name: Test Trigger Queue | Active: true
+Queue ID: 12 | Name: Test Trigger Queue 2 | Active: true
+
+=== RECENT TICKETS (last 5) ===
+Ticket ID: 5 | Title: teste | Category: TI | QueueId: null
+Ticket ID: 3 | Title: teste | Category: TI | QueueId: null
+Ticket ID: 2 | Title: teste | Category: TI | QueueId: null
+Ticket ID: 1 | Title: Não consigo acessar a VPN | Category: Rede | QueueId: null

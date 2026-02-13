@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import FormBuilder from "@/components/FormBuilder";
 import UserManagement from "./UserManagement";
+import TriggersSettings from "./TriggersSettings";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -729,6 +730,8 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("forms");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  console.log("Current activeSection:", activeSection, "Length:", activeSection.length);
+
   return (
     <div className="flex flex-col space-y-2">
       <div className="flex justify-between items-center">
@@ -783,11 +786,14 @@ export default function SettingsPage() {
                   <TeamsSettings />
                 ) : activeSection === "queues" ? (
                   <QueuesSettings />
+                ) : activeSection === "automations" ? (
+                  <TriggersSettings />
                 ) : (
                   <div className="h-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
                     <p className="text-lg font-medium">Módulo em desenvolvimento</p>
                     <p className="text-sm text-muted-foreground">
                       A configuração de {SETTINGS_SECTIONS.find(s => s.id === activeSection)?.label.toLowerCase()} estará disponível em breve.
+                      (Debug: activeSection='{activeSection}')
                     </p>
                   </div>
                 )}

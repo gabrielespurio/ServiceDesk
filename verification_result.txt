@@ -1,0 +1,8 @@
+Starting Trigger Execution Test...
+Created Queue: Test Trigger Queue 2 (ID: 13)
+Created Form: Test Trigger Form 2 (ID: 8)
+Created Trigger: Test Trigger 2 (ID: 7)
+Created Ticket: Test Ticket for Trigger 2 (ID: 4)
+Ticket Queue ID: 13
+SUCCESS: Ticket was assigned to the correct queue!
+Cleanup complete.
