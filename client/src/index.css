@@ -15,9 +15,9 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  /* Primary Brand Color - Deep Indigo */
-  --primary: 226 70% 55%;
-  --primary-foreground: 210 40% 98%;
+  /* Primary Brand Color - Deep Indigo/Purple */
+  --primary: 252 80% 55%;
+  --primary-foreground: 0 0% 100%;
 
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222 47% 11.2%;

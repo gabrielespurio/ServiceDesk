@@ -1,6 +1,6 @@
-import { users, tickets, messages, forms, teams, teamMembers, serviceQueues, queueTeams, queueUsers, triggers, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember, type ServiceQueue, type InsertServiceQueue, type Trigger, type InsertTrigger } from "@shared/schema";
+import { users, tickets, messages, forms, teams, teamMembers, serviceQueues, queueTeams, queueUsers, triggers, slaPolicies, schedules, aiAssistants, aiKnowledgeBases, aiChannels, aiActions, type User, type InsertUser, type Ticket, type InsertTicket, type Message, type InsertMessage, type Form, type InsertForm, type Team, type InsertTeam, type TeamMember, type ServiceQueue, type InsertServiceQueue, type Trigger, type InsertTrigger, type SlaPolicy, type InsertSlaPolicy, type Schedule, type InsertSchedule, type AiAssistant, type InsertAiAssistant, type AiKnowledgeBase, type InsertAiKnowledgeBase, type AiChannel, type InsertAiChannel, type AiAction, type InsertAiAction } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -13,7 +13,7 @@ export interface IStorage {
   getResolvers(): Promise<User[]>;
 
   // Tickets
-  getTickets(filters?: { status?: string; priority?: string; assignedToMe?: string; userId?: number; role?: string; queueId?: number }): Promise<(Ticket & { creator: User; assignee: User | null })[]>;
+  getTickets(filters?: { status?: string; priority?: string; assignedToMe?: string; unassigned?: string; userId?: number; role?: string; queueId?: number }): Promise<(Ticket & { creator: User; assignee: User | null })[]>;
   getTicket(id: number): Promise<(Ticket & { creator: User; assignee: User | null }) | undefined>;
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicket(id: number, updates: Partial<InsertTicket> & { assignedToId?: number | null }): Promise<Ticket | undefined>;
@@ -50,6 +50,25 @@ export interface IStorage {
   createTrigger(trigger: InsertTrigger): Promise<Trigger>;
   updateTrigger(id: number, updates: Partial<InsertTrigger>): Promise<Trigger | undefined>;
   deleteTrigger(id: number): Promise<boolean>;
+
+  // SLA Policies
+  getSlaPolicies(): Promise<SlaPolicy[]>;
+  createSlaPolicy(policy: InsertSlaPolicy): Promise<SlaPolicy>;
+  updateSlaPolicy(id: number, updates: Partial<InsertSlaPolicy>): Promise<SlaPolicy | undefined>;
+  deleteSlaPolicy(id: number): Promise<boolean>;
+
+  // Schedules
+  getSchedules(): Promise<Schedule[]>;
+  createSchedule(schedule: InsertSchedule): Promise<Schedule>;
+  updateSchedule(id: number, updates: Partial<InsertSchedule>): Promise<Schedule | undefined>;
+  deleteSchedule(id: number): Promise<boolean>;
+
+  // AI Assistants
+  getAiAssistants(): Promise<AiAssistant[]>;
+  getAiAssistant(id: number): Promise<AiAssistant | undefined>;
+  createAiAssistant(assistant: InsertAiAssistant): Promise<AiAssistant>;
+  updateAiAssistant(id: number, updates: Partial<InsertAiAssistant>): Promise<AiAssistant | undefined>;
+  deleteAiAssistant(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -59,8 +78,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.username, username)
+      )
+    ).limit(1);
+    
+    if (user) return user;
+
+    // If not found by username, try by email
+    const [userByEmail] = await db.select().from(users).where(
+      eq(users.email, username)
+    ).limit(1);
+    
+    return userByEmail;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -86,15 +117,21 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).where(eq(users.role, "resolver"));
   }
 
-  async getTickets(filters?: { status?: string; priority?: string; assignedToMe?: string; userId?: number; role?: string; queueId?: number }): Promise<(Ticket & { creator: User; assignee: User | null })[]> {
+  async getTickets(filters?: { status?: string; priority?: string; assignedToMe?: string; unassigned?: string; userId?: number; role?: string; queueId?: number }): Promise<(Ticket & { creator: User; assignee: User | null })[]> {
     const whereConditions = [];
     if (filters?.status) whereConditions.push(eq(tickets.status, filters.status as any));
     if (filters?.priority) whereConditions.push(eq(tickets.priority, filters.priority as any));
 
-    if (filters?.role === "user" && filters.userId) {
+    const userRole = (filters?.role || "").toLowerCase();
+    
+    if (userRole === "user" && filters?.userId) {
       whereConditions.push(eq(tickets.creatorId, filters.userId));
-    } else if (filters?.role === "resolver" && filters.assignedToMe === "true" && filters.userId) {
+    } else if ((userRole === "resolver" || userRole === "admin") && filters?.assignedToMe === "true" && filters?.userId) {
       whereConditions.push(eq(tickets.assignedToId, filters.userId));
+    }
+
+    if (filters?.unassigned === "true") {
+      whereConditions.push(isNull(tickets.assignedToId));
     }
 
     if (filters?.queueId) {
@@ -110,10 +147,74 @@ export class DatabaseStorage implements IStorage {
       orderBy: [desc(tickets.createdAt)],
     });
 
-    return results as (Ticket & { creator: User; assignee: User | null })[];
+    const activePolicies = await this.getSlaPolicies();
+    const allForms = await this.getForms();
+
+    return results.map(ticket => {
+      const sla = this.calculateSla(ticket, activePolicies, allForms);
+      return { ...ticket, sla };
+    });
   }
 
-  async getTicket(id: number): Promise<(Ticket & { creator: User; assignee: User | null }) | undefined> {
+  private calculateSla(ticket: Ticket, policies: SlaPolicy[], forms: Form[]) {
+    // Find matching SLA policy
+    const matchingPolicy = policies.find(policy => {
+      if (!policy.active) return false;
+      try {
+        const conditions = JSON.parse(policy.conditions || "[]");
+        const condList = Array.isArray(conditions) ? conditions : (conditions.all || []);
+        
+        if (condList.length === 0) return false;
+
+        return condList.every((c: any) => {
+          if (c.field === "form") {
+            const targetFormId = Number(c.value);
+            const targetForm = forms.find(f => f.id === targetFormId);
+            
+            // Check by name (category) or by explicit formId in customFields
+            const matchesName = targetForm && ticket.category === targetForm.name;
+            const matchesCustomId = ticket.customFields && JSON.parse(ticket.customFields).formId === targetFormId;
+            
+            return matchesName || matchesCustomId;
+          }
+          if (c.field === "priority") return ticket.priority === c.value;
+          return true;
+        });
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (!matchingPolicy) return null;
+
+    // Calculate deadline (simplified: using resolutionTime)
+    const targetMinutes = matchingPolicy.resolutionTime || 0;
+    if (targetMinutes === 0) return null;
+
+    const createdAt = new Date(ticket.createdAt!);
+    const deadline = new Date(createdAt.getTime() + targetMinutes * 60000);
+    
+    const now = new Date();
+    const isResolved = ticket.status === "resolvido" || ticket.status === "fechado";
+    const completedAt = isResolved ? new Date(ticket.updatedAt!) : null;
+    
+    // If resolved, compare resolution time with deadline
+    // If not resolved, compare current time with deadline
+    const checkTime = completedAt || now;
+    const isOverdue = checkTime > deadline;
+    const wasMet = (isResolved && completedAt) ? completedAt <= deadline : null;
+    
+    return {
+      deadline,
+      isOverdue,
+      isResolved,
+      wasMet,
+      completedAt,
+      matchingPolicyName: matchingPolicy.name
+    };
+  }
+
+  async getTicket(id: number): Promise<(Ticket & { creator: User; assignee: User | null; sla?: any }) | undefined> {
     const result = await db.query.tickets.findFirst({
       where: eq(tickets.id, id),
       with: {
@@ -121,7 +222,14 @@ export class DatabaseStorage implements IStorage {
         assignee: true,
       },
     });
-    return result as (Ticket & { creator: User; assignee: User | null }) | undefined;
+    
+    if (!result) return undefined;
+
+    const activePolicies = await this.getSlaPolicies();
+    const allForms = await this.getForms();
+    const sla = this.calculateSla(result as Ticket, activePolicies, allForms);
+
+    return { ...result, sla } as (Ticket & { creator: User; assignee: User | null; sla?: any });
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
@@ -306,7 +414,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTicket(id: number, updates: Partial<InsertTicket> & { assignedToId?: number | null }): Promise<Ticket | undefined> {
-    const [updatedTicket] = await db.update(tickets).set(updates).where(eq(tickets.id, id)).returning();
+    const [updatedTicket] = await db.update(tickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tickets.id, id))
+      .returning();
     return updatedTicket;
   }
 
@@ -583,6 +694,83 @@ export class DatabaseStorage implements IStorage {
   async deleteTrigger(id: number): Promise<boolean> {
     const [deleted] = await db.delete(triggers).where(eq(triggers.id, id)).returning();
     return !!deleted;
+  }
+
+  // SLA Policies
+  async getSlaPolicies(): Promise<SlaPolicy[]> {
+    return db.select().from(slaPolicies).orderBy(desc(slaPolicies.createdAt));
+  }
+
+  async createSlaPolicy(policy: InsertSlaPolicy): Promise<SlaPolicy> {
+    const [newPolicy] = await db.insert(slaPolicies).values(policy).returning();
+    return newPolicy;
+  }
+
+  async updateSlaPolicy(id: number, updates: Partial<InsertSlaPolicy>): Promise<SlaPolicy | undefined> {
+    const [updated] = await db.update(slaPolicies).set({ ...updates, updatedAt: new Date() }).where(eq(slaPolicies.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSlaPolicy(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(slaPolicies).where(eq(slaPolicies.id, id)).returning();
+    return !!deleted;
+  }
+
+  // Schedules
+  async getSchedules(): Promise<Schedule[]> {
+    return db.select().from(schedules).orderBy(desc(schedules.createdAt));
+  }
+
+  async createSchedule(schedule: InsertSchedule): Promise<Schedule> {
+    const [newSchedule] = await db.insert(schedules).values(schedule).returning();
+    return newSchedule;
+  }
+
+  async updateSchedule(id: number, updates: Partial<InsertSchedule>): Promise<Schedule | undefined> {
+    const [updated] = await db.update(schedules).set(updates).where(eq(schedules.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSchedule(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(schedules).where(eq(schedules.id, id)).returning();
+    return !!deleted;
+  }
+
+  // AI Assistants
+  async getAiAssistants(): Promise<AiAssistant[]> {
+    return db.select().from(aiAssistants).orderBy(desc(aiAssistants.createdAt));
+  }
+
+  async getAiAssistant(id: number): Promise<AiAssistant | undefined> {
+    const result = await db.query.aiAssistants.findFirst({
+      where: eq(aiAssistants.id, id),
+      with: {
+        knowledgeBases: true,
+        channels: true,
+        actions: true,
+      }
+    });
+    return result as AiAssistant | undefined;
+  }
+
+  async createAiAssistant(assistant: InsertAiAssistant): Promise<AiAssistant> {
+    const [newAssistant] = await db.insert(aiAssistants).values(assistant).returning();
+    return newAssistant;
+  }
+
+  async updateAiAssistant(id: number, updates: Partial<InsertAiAssistant>): Promise<AiAssistant | undefined> {
+    const [updated] = await db.update(aiAssistants).set({ ...updates, updatedAt: new Date() }).where(eq(aiAssistants.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAiAssistant(id: number): Promise<boolean> {
+    return await db.transaction(async (tx) => {
+      await tx.delete(aiKnowledgeBases).where(eq(aiKnowledgeBases.assistantId, id));
+      await tx.delete(aiChannels).where(eq(aiChannels.assistantId, id));
+      await tx.delete(aiActions).where(eq(aiActions.assistantId, id));
+      const [deleted] = await tx.delete(aiAssistants).where(eq(aiAssistants.id, id)).returning();
+      return !!deleted;
+    });
   }
 }
 

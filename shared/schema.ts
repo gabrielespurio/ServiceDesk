@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -132,6 +132,43 @@ export const queueUsersRelations = relations(queueUsers, ({ one }) => ({
   }),
 }));
 
+export const schedules = pgTable("schedules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  timezone: text("timezone").default("America/Sao_Paulo").notNull(),
+  rules: text("rules").notNull(), // JSON string: [{ day: 0-6, slots: [{ start: "HH:mm", end: "HH:mm" }] }]
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const slaPolicies = pgTable("sla_policies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  conditions: text("conditions").notNull(), // JSON string: { formId?: number, priority?: string, category?: string }
+  responseTime: integer("response_time"), // in minutes
+  resolutionTime: integer("resolution_time"), // in minutes
+  isBusinessHours: boolean("is_business_hours").default(false).notNull(),
+  scheduleId: integer("schedule_id"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const slaPoliciesRelations = relations(slaPolicies, ({ one }) => ({
+  schedule: one(schedules, {
+    fields: [slaPolicies.scheduleId],
+    references: [schedules.id],
+  }),
+}));
+
+export const insertScheduleSchema = createInsertSchema(schedules).omit({ id: true, createdAt: true });
+export const insertSlaPolicySchema = createInsertSchema(slaPolicies).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Schedule = typeof schedules.$inferSelect;
+export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
+export type SlaPolicy = typeof slaPolicies.$inferSelect;
+export type InsertSlaPolicy = z.infer<typeof insertSlaPolicySchema>;
+
 // Schemas
 export const insertFormSchema = createInsertSchema(forms).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, createdAt: true });
@@ -214,3 +251,143 @@ export type InsertTrigger = z.infer<typeof insertTriggerSchema>;
 // Add Message Exports
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export const aiCategories = pgTable("ai_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI Global Connections
+export const aiConnections = pgTable("ai_connections", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").default("api_rest").notNull(), // api_rest, etc.
+  url: text("url").notNull(),
+  method: text("method").default("GET").notNull(),
+  authType: text("auth_type").default("none"), // none, bearer, basic
+  authConfig: text("auth_config"), // JSON string with token, user, pass, etc.
+  headers: text("headers"), // JSON string with array of {key, value}
+  parameters: text("parameters"), // JSON string with array of query params {key, value}
+  bodySchema: text("body_schema"), // JSON schema string for POST/PUT
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Assistants Module
+export const aiAssistants = pgTable("ai_assistants", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  avatar: text("avatar"),
+  description: text("description"),
+  provider: text("provider").default("gemini"), // gemini, openai
+  model: text("model").default("gemini-2.5-flash"), // gemini-2.5-flash, gpt-5-mini
+  apiKey: text("api_key"),
+  objective: text("objective"),
+  personality: text("personality"),
+  scope: text("scope").default("external").notNull(), // internal, external
+  categoryId: integer("category_id"),
+  enableLogs: boolean("enable_logs").default(false).notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const aiKnowledgeBases = pgTable("ai_knowledge_bases", {
+  id: serial("id").primaryKey(),
+  assistantId: integer("assistant_id").notNull(),
+  type: text("type").notNull(), // file, url, text, api
+  content: text("content").notNull(), // filename, url, or raw text
+  authType: text("auth_type").default("none"), // none, token, basic
+  token: text("token"),
+  user: text("user_name"),
+  pass: text("password"),
+  status: text("status").default("ready").notNull(), // indexing, ready, failed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const aiChannels = pgTable("ai_channels", {
+  id: serial("id").primaryKey(),
+  assistantId: integer("assistant_id").notNull(),
+  type: text("type").notNull(), // whatsapp, web, etc.
+  config: text("config"), // JSON string
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const aiActions = pgTable("ai_actions", {
+  id: serial("id").primaryKey(),
+  assistantId: integer("assistant_id").notNull(),
+  actionType: text("action_type").notNull(), // create_ticket, etc.
+  config: text("config"), // JSON string
+  active: boolean("active").default(true).notNull(),
+});
+
+export const aiLogs = pgTable("ai_logs", {
+  id: serial("id").primaryKey(),
+  assistantId: integer("assistant_id").notNull(),
+  actionType: text("action_type").notNull(), // n8n_execution, ticket_created, transfer
+  status: text("status").notNull(), // success, error, pending
+  details: json("details"), // Technical payload and responses
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations
+export const aiAssistantsRelations = relations(aiAssistants, ({ many }) => ({
+  knowledgeBases: many(aiKnowledgeBases),
+  channels: many(aiChannels),
+  actions: many(aiActions),
+}));
+
+export const aiKnowledgeBasesRelations = relations(aiKnowledgeBases, ({ one }) => ({
+  assistant: one(aiAssistants, {
+    fields: [aiKnowledgeBases.assistantId],
+    references: [aiAssistants.id],
+  }),
+}));
+
+export const aiChannelsRelations = relations(aiChannels, ({ one }) => ({
+  assistant: one(aiAssistants, {
+    fields: [aiChannels.assistantId],
+    references: [aiAssistants.id],
+  }),
+}));
+
+export const aiActionsRelations = relations(aiActions, ({ one }) => ({
+  assistant: one(aiAssistants, {
+    fields: [aiActions.assistantId],
+    references: [aiAssistants.id],
+  }),
+}));
+
+// Schemas for AI Module
+export const insertAiAssistantSchema = createInsertSchema(aiAssistants).omit({ id: true, createdAt: true, updatedAt: true });
+export type AiAssistant = typeof aiAssistants.$inferSelect;
+export type InsertAiAssistant = z.infer<typeof insertAiAssistantSchema>;
+
+export const insertAiKnowledgeBaseSchema = createInsertSchema(aiKnowledgeBases).omit({ id: true, createdAt: true });
+export type AiKnowledgeBase = typeof aiKnowledgeBases.$inferSelect;
+export type InsertAiKnowledgeBase = z.infer<typeof insertAiKnowledgeBaseSchema>;
+
+export const insertAiChannelSchema = createInsertSchema(aiChannels).omit({ id: true, createdAt: true });
+export type AiChannel = typeof aiChannels.$inferSelect;
+export type InsertAiChannel = z.infer<typeof insertAiChannelSchema>;
+
+export const insertAiActionSchema = createInsertSchema(aiActions).omit({ id: true });
+export type AiAction = typeof aiActions.$inferSelect;
+export type InsertAiAction = z.infer<typeof insertAiActionSchema>;
+
+// WhatsApp Shared Connections
+export const whatsappConnections = pgTable("whatsapp_connections", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  provider: text("provider").notNull(), // evolution, meta
+  config: text("config"), // JSON string
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWhatsappConnectionSchema = createInsertSchema(whatsappConnections).omit({ id: true, createdAt: true });
+export type WhatsappConnection = typeof whatsappConnections.$inferSelect;
+export type InsertWhatsappConnection = z.infer<typeof insertWhatsappConnectionSchema>;

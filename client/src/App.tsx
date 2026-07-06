@@ -16,6 +16,15 @@ import ResolverDashboard from "@/pages/dashboard/ResolverDashboard";
 import SettingsPage from "@/pages/admin/SettingsPage";
 import QueuesPage from "@/pages/queues/QueuesPage";
 
+// AI Module Pages
+import AiDashboard from "@/pages/ai/AiDashboard";
+import AiAssistantsList from "@/pages/ai/AiAssistantsList";
+import AiAssistantWizard from "@/pages/ai/AiAssistantWizard";
+import AiConversations from "@/pages/ai/AiConversations";
+import AiChannels from "@/pages/ai/AiChannels";
+import AiConnections from "@/pages/ai/AiConnections";
+import AiLogs from "@/pages/ai/AiLogs";
+
 function Router() {
   return (
     <Switch>
@@ -77,6 +86,71 @@ function Router() {
           <ProtectedRoute allowedRoles={['admin']}>
             <Layout>
               <SettingsPage />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      {/* AI Module Routes */}
+      <Route path="/ai/dashboard">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiDashboard />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/assistants">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiAssistantsList />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/assistants/new">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiAssistantWizard />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/conversations">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiConversations />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/channels">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiChannels />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/connections">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiConnections />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/ai/logs">
+        {() => (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout>
+              <AiLogs />
             </Layout>
           </ProtectedRoute>
         )}

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema, insertTeamSchema, teams, insertTriggerSchema, triggers } from './schema';
+import { insertUserSchema, insertTicketSchema, insertMessageSchema, users, tickets, messages, forms, insertFormSchema, insertTeamSchema, teams, insertTriggerSchema, triggers, slaPolicies, insertSlaPolicySchema, schedules, insertScheduleSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -53,7 +53,7 @@ export const api = {
         queueId: z.number().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof tickets.$inferSelect & { creator: typeof users.$inferSelect, assignee: typeof users.$inferSelect | null }>()),
+        200: z.array(z.custom<typeof tickets.$inferSelect & { creator: typeof users.$inferSelect, assignee: typeof users.$inferSelect | null, sla: any }>()),
       },
     },
     create: {
@@ -69,7 +69,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/tickets/:id',
       responses: {
-        200: z.custom<typeof tickets.$inferSelect & { creator: typeof users.$inferSelect, assignee: typeof users.$inferSelect | null }>(),
+        200: z.custom<typeof tickets.$inferSelect & { creator: typeof users.$inferSelect, assignee: typeof users.$inferSelect | null, sla: any }>(),
         404: errorSchemas.notFound,
       },
     },
@@ -299,6 +299,76 @@ export const api = {
     delete: {
       method: 'DELETE' as const,
       path: '/api/triggers/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  sla: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/sla',
+      responses: {
+        200: z.array(z.custom<typeof slaPolicies.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/sla',
+      input: insertSlaPolicySchema,
+      responses: {
+        201: z.custom<typeof slaPolicies.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/sla/:id',
+      input: insertSlaPolicySchema.partial(),
+      responses: {
+        200: z.custom<typeof slaPolicies.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/sla/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  schedules: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/schedules',
+      responses: {
+        200: z.array(z.custom<typeof schedules.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/schedules',
+      input: insertScheduleSchema,
+      responses: {
+        201: z.custom<typeof schedules.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/schedules/:id',
+      input: insertScheduleSchema.partial(),
+      responses: {
+        200: z.custom<typeof schedules.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/schedules/:id',
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,

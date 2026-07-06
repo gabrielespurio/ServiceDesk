@@ -34,6 +34,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import FormBuilder from "@/components/FormBuilder";
 import UserManagement from "./UserManagement";
 import TriggersSettings from "./TriggersSettings";
+import SlaSettings from "./SlaSettings";
+import ScheduleSettings from "./ScheduleSettings";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -788,6 +790,10 @@ export default function SettingsPage() {
                   <QueuesSettings />
                 ) : activeSection === "automations" ? (
                   <TriggersSettings />
+                ) : activeSection === "sla" ? (
+                  <SlaSettings />
+                ) : activeSection === "roster" ? (
+                  <ScheduleSettings />
                 ) : (
                   <div className="h-full p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center space-y-2 opacity-60">
                     <p className="text-lg font-medium">Módulo em desenvolvimento</p>

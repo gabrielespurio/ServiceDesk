@@ -7,6 +7,7 @@ type TicketFilters = {
   status?: string;
   priority?: string;
   assignedToMe?: string;
+  unassigned?: string;
   queueId?: number;
 };
 
@@ -16,6 +17,7 @@ export function useTickets(filters?: TicketFilters) {
   if (filters?.status && filters.status !== "all") queryParams.append("status", filters.status);
   if (filters?.priority && filters.priority !== "all") queryParams.append("priority", filters.priority);
   if (filters?.assignedToMe) queryParams.append("assignedToMe", filters.assignedToMe);
+  if (filters?.unassigned) queryParams.append("unassigned", filters.unassigned);
   if (filters?.queueId) queryParams.append("queueId", String(filters.queueId));
 
   const queryString = queryParams.toString();
