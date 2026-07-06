@@ -2,6 +2,7 @@
   "name": "rest-express",
   "version": "1.0.0",
   "type": "module",
+  "main": "dist/index.cjs",
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development node --import tsx --watch --watch-path=server --watch-path=shared server/index.ts",
